@@ -1,65 +1,145 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class AuthService with ChangeNotifier {
-  final String _baseUrl = 'https://gym-manager-java.onrender.com/auth';
+class AuthService extends ChangeNotifier {
+  final String baseUrl = 'https://gym-manager-java.onrender.com';
 
+  // LOGIN
+  Future<bool> login(String email, String senha) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': senha}),
+      );
 
-  Future<void> saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', token);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final prefs = await SharedPreferences.getInstance();
+
+        final token = data['token']?.toString();
+        final aluno = data['aluno'];
+        final nome = aluno?['nome']?.toString();
+        final id = aluno?['id']?.toString();
+
+        if (token != null && nome != null && id != null) {
+          await prefs.setString('token', token);
+          await prefs.setString('nome', nome);
+          await prefs.setString('alunoId', id);
+          return true;
+        }
+      } else {
+        final erro = _extrairMensagemErro(response);
+        throw Exception(erro);
+      }
+    } catch (e) {
+      throw Exception('Erro ao autenticar: ${e.toString().replaceAll('Exception: ', '')}');
+    }
+
+    return false;
   }
 
-  Future<bool> login(String email, String password) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password}),
-    );
+  // REGISTRO
+  Future<bool> register(Map<String, dynamic> dados) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(dados),
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final token = data['token'];
-      final aluno = data['aluno'];
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('auth_token', token);
-      await prefs.setString('aluno_nome', aluno['nome']);
-      await prefs.setString('aluno_id', aluno['id']);
-
-      Fluttertoast.showToast(msg: "Login realizado com sucesso!");
-      return true;
-    } else {
-      Fluttertoast.showToast(msg: "Erro ao fazer login: ${response.body}");
-      return false;
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final body = jsonDecode(response.body);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', body['token']);
+        await prefs.setString('nome', body['aluno']['nome']);
+        await prefs.setString('alunoId', body['aluno']['id']);
+        return true;
+      } else {
+        final erro = _extrairMensagemErro(response);
+        throw Exception(erro);
+      }
+    } catch (e) {
+      throw Exception('Erro ao cadastrar: ${e.toString().replaceAll('Exception: ', '')}');
     }
   }
 
-  Future<bool> register(Map<String, dynamic> userData) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(userData),
+  // ATUALIZAR NOME
+  Future<bool> atualizarNome(String novoNome, String alunoId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/alunos/$alunoId/nome'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'nome': novoNome}),
     );
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final token = data['token'];
-      final aluno = data['aluno'];
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('auth_token', token);
-      await prefs.setString('aluno_nome', aluno['nome']);
-      await prefs.setString('aluno_id', aluno['id']);
-
-      Fluttertoast.showToast(msg: "Cadastro realizado com sucesso!");
+      await prefs.setString('nome', novoNome);
       return true;
-    } else {
-      Fluttertoast.showToast(msg: "Erro ao cadastrar: ${response.body}");
-      return false;
+    }
+
+    return false;
+  }
+
+  // ATUALIZAR PERFIL COMPLETO
+  Future<bool> atualizarPerfil({
+    required String alunoId,
+    required String nome,
+    required String telefone,
+    required String dataNascimento,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/alunos/$alunoId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'nome': nome,
+        'telefone': telefone,
+        'dataNascimento': dataNascimento,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      await prefs.setString('nome', nome);
+      return true;
+    }
+
+    return false;
+  }
+
+  // RECUPERAR NOME SALVO
+  Future<String?> getNomeSalvo() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('nome');
+  }
+
+  // LOGOUT
+  Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+  }
+
+  // MÉTODO AUXILIAR PARA ERROS
+  String _extrairMensagemErro(http.Response response) {
+    try {
+      final body = jsonDecode(response.body);
+      if (body is String) return body;
+      if (body is Map && body.containsKey('message')) return body['message'];
+      return response.body;
+    } catch (_) {
+      return response.body.isNotEmpty ? response.body : 'Erro desconhecido';
     }
   }
 }
