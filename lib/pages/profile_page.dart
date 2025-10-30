@@ -49,7 +49,7 @@ class _ProfilePageState extends State<ProfilePage> {
       alunoId: alunoId,
       nome: nomeController.text.trim(),
       telefone: telefoneController.text.trim(),
-      dataNascimento: _formatarData(dataController.text.trim()),
+      data_nascimento: _formatarData(dataController.text.trim()),
     );
 
     setState(() => isSaving = false);

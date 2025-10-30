@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../services/auth_service.dart';
-import 'home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -25,9 +24,18 @@ class _LoginPageState extends State<LoginPage> {
   final telefoneController = TextEditingController();
   final dataController = TextEditingController();
 
-  final cpfMask = MaskTextInputFormatter(mask: '###.###.###-##', filter: {"#": RegExp(r'[0-9]')});
-  final telefoneMask = MaskTextInputFormatter(mask: '(##)#####-####', filter: {"#": RegExp(r'[0-9]')});
-  final dataMask = MaskTextInputFormatter(mask: '##/##/####', filter: {"#": RegExp(r'[0-9]')});
+  final cpfMask = MaskTextInputFormatter(
+    mask: '###.###.###-##',
+    filter: {"#": RegExp(r'[0-9]')},
+  );
+  final telefoneMask = MaskTextInputFormatter(
+    mask: '(##)#####-####',
+    filter: {"#": RegExp(r'[0-9]')},
+  );
+  final dataMask = MaskTextInputFormatter(
+    mask: '##/##/####',
+    filter: {"#": RegExp(r'[0-9]')},
+  );
 
   String _formatarData(String data) {
     final partes = data.split('/');
@@ -46,123 +54,226 @@ class _LoginPageState extends State<LoginPage> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              children: [
-                const SizedBox(height: 32),
-                Text(
-                  isLogin ? "Bem-vindo de volta 👋" : "Crie sua conta",
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  isLogin ? "Acesse sua conta para continuar" : "Preencha os dados abaixo",
-                  style: const TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-                const SizedBox(height: 32),
-
-                if (!isLogin) ...[
-                  _buildInput("Nome", Icons.person, onChanged: (v) => nome = v.trim()),
-                  const SizedBox(height: 12),
-                  _buildInput("CPF", Icons.badge, controller: cpfController, inputFormatters: [cpfMask], validator: (v) => v != null && v.length == 14 ? null : 'CPF inválido'),
-                  const SizedBox(height: 12),
-                  _buildInput("Telefone", Icons.phone, controller: telefoneController, inputFormatters: [telefoneMask], validator: (v) => v != null && v.length == 14 ? null : 'Telefone inválido'),
-                  const SizedBox(height: 12),
-                  _buildInput("Data de Nascimento", Icons.cake, controller: dataController, inputFormatters: [dataMask], validator: (v) => v != null && v.length == 10 ? null : 'Data inválida'),
-                  const SizedBox(height: 12),
-                ],
-
-                _buildInput("Email", Icons.email, keyboardType: TextInputType.emailAddress, validator: (v) => v != null && _emailValido(v) ? null : 'Email inválido', onChanged: (v) => email = v.trim()),
-                const SizedBox(height: 12),
-                _buildInput("Senha", Icons.lock, obscureText: true, validator: (v) => v != null && v.length >= 6 ? null : 'Mínimo 6 caracteres', onChanged: (v) => password = v.trim()),
-                const SizedBox(height: 8),
-
-                if (isLogin)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Funcionalidade de recuperação em construção")),
-                        );
-                      },
-                      child: const Text("Esqueci minha senha", style: TextStyle(color: Colors.deepPurple)),
-                    ),
-                  ),
-
-                const SizedBox(height: 24),
-                isLoading
-                    ? const Center(child: CircularProgressIndicator(color: Colors.deepPurple))
-                    : ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepPurple,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          textStyle: const TextStyle(fontSize: 16),
-                        ),
-                        onPressed: () async {
-                          if (_formKey.currentState!.validate()) {
-                            setState(() => isLoading = true);
-
-                            try {
-                              bool success;
-
-                              if (isLogin) {
-                                success = await authService.login(email, password);
-                              } else {
-                                final dataFormatada = _formatarData(dataController.text);
-                                success = await authService.register({
-                                  "nome": nome,
-                                  "cpf": cpfController.text,
-                                  "email": email,
-                                  "telefone": telefoneController.text,
-                                  "dataNascimento": dataFormatada,
-                                  "login": email,
-                                  "password": password,
-                                });
-                              }
-
-                              setState(() => isLoading = false);
-
-                              if (success) {
-                                final nomeSalvo = await authService.getNomeSalvo();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(isLogin ? 'Login realizado com sucesso!' : 'Cadastro realizado com sucesso!')),
-                                );
-                                await Future.delayed(const Duration(seconds: 1));
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => HomePage(nome: nomeSalvo ?? 'Usuário')),
-                                );
-                              }
-                            } catch (e) {
-                              setState(() => isLoading = false);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(e.toString())),
-                              );
-                            }
-                          }
-                        },
-                        child: Text(isLogin ? "Entrar" : "Cadastrar"),
-                      ),
-                const SizedBox(height: 16),
-                Center(
-                  child: TextButton(
-                    onPressed: () => setState(() => isLogin = !isLogin),
-                    child: Text(
-                      isLogin ? "Ainda não tem conta? Cadastre-se" : "Já tem conta? Entrar",
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
-              ],
+      body: Stack(
+        children: [
+          // 🔳 Imagem de fundo
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/Copilot_20251029_183912.png'),
+                repeat: ImageRepeat.repeat,
+                alignment: Alignment.topLeft,
+                scale: 1.0,
+              ),
             ),
           ),
-        ),
+
+          // 🔳 Camada escura por cima da imagem
+          // ignore: deprecated_member_use
+          Container(color: Colors.black.withOpacity(0.3)),
+
+          // 🔳 Conteúdo do login
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  children: [
+                    const SizedBox(height: 32),
+                    const Image(
+                      image: AssetImage('assets/images/fulltreino.png'),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      isLogin ? "Bem-vindo de volta" : "Crie sua conta",
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      isLogin
+                          ? "Acesse sua conta para continuar"
+                          : "Preencha os dados abaixo",
+                      style: const TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 32),
+
+                    if (!isLogin) ...[
+                      _buildInput(
+                        "Nome",
+                        Icons.person,
+                        onChanged: (v) => nome = v.trim(),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInput(
+                        "CPF",
+                        Icons.badge,
+                        controller: cpfController,
+                        inputFormatters: [cpfMask],
+                        validator: (v) =>
+                            v != null && v.length == 14 ? null : 'CPF inválido',
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInput(
+                        "Telefone",
+                        Icons.phone,
+                        controller: telefoneController,
+                        inputFormatters: [telefoneMask],
+                        validator: (v) => v != null && v.length == 14
+                            ? null
+                            : 'Telefone inválido',
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInput(
+                        "Data de Nascimento",
+                        Icons.cake,
+                        controller: dataController,
+                        inputFormatters: [dataMask],
+                        validator: (v) => v != null && v.length == 10
+                            ? null
+                            : 'Data inválida',
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
+                    _buildInput(
+                      "Email",
+                      Icons.email,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (v) => v != null && _emailValido(v)
+                          ? null
+                          : 'Email inválido',
+                      onChanged: (v) => email = v.trim(),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildInput(
+                      "Senha",
+                      Icons.lock,
+                      obscureText: true,
+                      validator: (v) => v != null && v.length >= 6
+                          ? null
+                          : 'Mínimo 6 caracteres',
+                      onChanged: (v) => password = v.trim(),
+                    ),
+                    const SizedBox(height: 8),
+
+                    if (isLogin)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "Funcionalidade de recuperação em construção",
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            "Esqueci minha senha",
+                            style: TextStyle(color: Colors.deepPurple),
+                          ),
+                        ),
+                      ),
+
+                    const SizedBox(height: 24),
+                    isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.deepPurple,
+                            ),
+                          )
+                        : ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepPurple,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              textStyle: const TextStyle(fontSize: 16),
+                            ),
+                            onPressed: () async {
+                              if (_formKey.currentState!.validate()) {
+                                setState(() => isLoading = true);
+
+                                try {
+                                  bool success;
+
+                                  if (isLogin) {
+                                    success = await authService.login(
+                                      email,
+                                      password,
+                                    );
+                                  } else {
+                                    final dataFormatada = _formatarData(
+                                      dataController.text,
+                                    );
+                                    success = await authService.register({
+                                      "nome": nome,
+                                      "cpf": cpfController.text,
+                                      "email": email,
+                                      "telefone": telefoneController.text,
+                                      "data_nascimento": dataFormatada,
+                                      "login": email,
+                                      "password": password,
+                                    });
+                                  }
+
+                                  setState(() => isLoading = false);
+
+                                  if (success) {
+                                    final nomeSalvo = await authService
+                                        .getNomeSalvo(); 
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          isLogin
+                                              ? 'Login realizado com sucesso!'
+                                              : 'Cadastro realizado com sucesso!',
+                                        ),
+                                      ),
+                                    );
+                                    await Future.delayed(
+                                      const Duration(seconds: 1),
+                                    );
+                                    Navigator.pushReplacementNamed(
+                                      context,
+                                      '/home',
+                                      arguments: nomeSalvo ?? 'Usuário',
+                                    );
+                                  }
+                                } catch (e) {
+                                  setState(() => isLoading = false);
+                                  // ignore: use_build_context_synchronously
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(e.toString())),
+                                  );
+                                }
+                              }
+                            },
+                            child: Text(isLogin ? "Entrar" : "Cadastrar"),
+                          ),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: TextButton(
+                        onPressed: () => setState(() => isLogin = !isLogin),
+                        child: Text(
+                          isLogin
+                              ? "Ainda não tem conta? Cadastre-se"
+                              : "Já tem conta? Entrar",
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

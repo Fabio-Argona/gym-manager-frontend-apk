@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/date_utils.dart' as meu_date_utils;
 
 class AuthService extends ChangeNotifier {
   final String baseUrl = 'https://gym-manager-java.onrender.com';
@@ -17,12 +18,16 @@ class AuthService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        print('Resposta completa do login: ${response.body}');
+
         final prefs = await SharedPreferences.getInstance();
 
         final token = data['token']?.toString();
         final aluno = data['aluno'];
         final nome = aluno?['nome']?.toString();
         final id = aluno?['id']?.toString();
+
+        print('Nome salvo no login: $nome');
 
         if (token != null && nome != null && id != null) {
           await prefs.setString('token', token);
@@ -35,7 +40,9 @@ class AuthService extends ChangeNotifier {
         throw Exception(erro);
       }
     } catch (e) {
-      throw Exception('Erro ao autenticar: ${e.toString().replaceAll('Exception: ', '')}');
+      throw Exception(
+        'Erro ao autenticar: ${e.toString().replaceAll('Exception: ', '')}',
+      );
     }
 
     return false;
@@ -44,11 +51,22 @@ class AuthService extends ChangeNotifier {
   // REGISTRO
   Future<bool> register(Map<String, dynamic> dados) async {
     try {
+      // 🔧 Formatar data de nascimento se estiver presente
+      if (dados.containsKey('data_nascimento')) {
+        final original = dados['data_nascimento']?.toString() ?? '';
+        dados['data_nascimento'] = meu_date_utils.DateUtils.formatarParaEnvio(original);
+      }
+
+      print('Dados enviados no register: ${jsonEncode(dados)}');
+
       final response = await http.post(
         Uri.parse('$baseUrl/auth/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(dados),
       );
+
+      print('Resposta do backend: ${response.statusCode}');
+      print('Corpo da resposta: ${response.body}');
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final body = jsonDecode(response.body);
@@ -93,10 +111,13 @@ class AuthService extends ChangeNotifier {
     required String alunoId,
     required String nome,
     required String telefone,
-    required String dataNascimento,
+    required String data_nascimento,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
+
+    final dataFormatada = meu_date_utils.DateUtils.formatarParaEnvio(data_nascimento);
+    print('Data formatada para envio: $dataFormatada');
 
     final response = await http.put(
       Uri.parse('$baseUrl/alunos/$alunoId'),
@@ -107,7 +128,7 @@ class AuthService extends ChangeNotifier {
       body: jsonEncode({
         'nome': nome,
         'telefone': telefone,
-        'dataNascimento': dataNascimento,
+        'data_nascimento': dataFormatada,
       }),
     );
 

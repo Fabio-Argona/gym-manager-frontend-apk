@@ -9,9 +9,7 @@ import 'pages/redefinir_senha_page.dart';
 void main() {
   runApp(
     MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthService()),
-      ],
+      providers: [ChangeNotifierProvider(create: (_) => AuthService())],
       child: const MyApp(),
     ),
   );
@@ -35,8 +33,8 @@ class MyApp extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.deepPurple,
             foregroundColor: Colors.white,
-            padding: EdgeInsets.symmetric(vertical: 16),
-            textStyle: TextStyle(fontSize: 16),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            textStyle: const TextStyle(fontSize: 16),
           ),
         ),
       ),
@@ -47,7 +45,9 @@ class MyApp extends StatelessWidget {
           case '/login':
             return _criarRotaAnimada(const LoginPage());
           case '/home':
-            return _criarRotaAnimada(const HomePage(nome: 'Usuário'));
+            final nome = settings.arguments as String? ?? 'Usuário';
+            return _criarRotaAnimada(HomePage(nome: nome));
+
           case '/recuperar':
             return _criarRotaAnimada(const RecuperarSenhaPage());
           case '/redefinir':
@@ -65,7 +65,7 @@ class MyApp extends StatelessWidget {
       pageBuilder: (_, __, ___) => page,
       transitionsBuilder: (_, animation, __, child) {
         final offsetAnimation = Tween<Offset>(
-          begin: const Offset(1.0, 0.0), // desliza da direita
+          begin: const Offset(1.0, 0.0),
           end: Offset.zero,
         ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
 
