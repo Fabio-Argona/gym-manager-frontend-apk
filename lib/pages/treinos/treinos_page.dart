@@ -22,41 +22,41 @@ class _TreinosPageState extends State<TreinosPage> {
   }
 
   Future<void> _carregarGrupos() async {
-  setState(() => _carregando = true);
+    setState(() => _carregando = true);
 
-  try {
-    final grupos = await _carregarGruposComExercicios();
+    try {
+      final grupos = await _carregarGruposComExercicios();
 
-    // Ordena conforme a ordem desejada
-    const ordemGrupos = [
-      'Peito',
-      'Costas',
-      'Tríceps',
-      'Bíceps',
-      'Ombro',
-      'Perna',
-      'Abdômen',
-      'Panturrilha',
-    ];
-    grupos.sort((a, b) {
-      final ia = ordemGrupos.indexOf(a['nome']);
-      final ib = ordemGrupos.indexOf(b['nome']);
-      return (ia == -1 ? 999 : ia).compareTo(ib == -1 ? 999 : ib);
-    });
+      const ordemGrupos = [
+        'Peito',
+        'Costas',
+        'Tríceps',
+        'Bíceps',
+        'Ombro',
+        'Perna',
+        'Abdômen',
+        'Panturrilha',
+      ];
+      grupos.sort((a, b) {
+        final ia = ordemGrupos.indexOf(a['nome']);
+        final ib = ordemGrupos.indexOf(b['nome']);
+        return (ia == -1 ? 999 : ia).compareTo(ib == -1 ? 999 : ib);
+      });
 
-    if (!mounted) return;
-    setState(() {
-      _grupos = grupos;
-      _carregando = false;
-    });
-  } catch (e) {
-    if (!mounted) return;
-    setState(() => _carregando = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Erro ao carregar grupos: $e')),
-    );
+      if (!mounted) return;
+      setState(() {
+        _grupos = grupos;
+        _carregando = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _carregando = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao carregar grupos: $e')));
+    }
   }
-}
+
   Future<List<Map<String, dynamic>>> _carregarGruposComExercicios() async {
     final grupos = await TreinoService().listarGrupos();
     final exercicios = await ExercicioService().listarExercicios();
@@ -79,89 +79,94 @@ class _TreinosPageState extends State<TreinosPage> {
     return grupos;
   }
 
- Future<void> _criarGrupo() async {
-  final nome = await _mostrarDialogoGrupo();
-  if (nome != null && nome.isNotEmpty) {
-    try {
-      await TreinoService().criarGrupo(nome);
+  Future<void> _criarGrupo() async {
+    final nome = await _mostrarDialogoGrupo();
+    if (nome != null && nome.isNotEmpty) {
+      try {
+        await TreinoService().criarGrupo(nome);
 
-      // Recarrega os grupos e força atualização
-      await _carregarGrupos();
+        // Recarrega os grupos e força atualização
+        await _carregarGrupos();
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Grupo criado com sucesso!')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao criar grupo: $e')),
-      );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Grupo criado com sucesso!')),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao criar grupo: $e')));
+      }
     }
   }
-}
-
-
 
   Future<void> _editarGrupo(String id, String nomeAtual) async {
-  final novoNome = await _mostrarDialogoGrupo(nomeAtual);
-  if (novoNome != null && novoNome.isNotEmpty) {
-    try {
-      await TreinoService().editarGrupo(id, novoNome);
+    final novoNome = await _mostrarDialogoGrupo(nomeAtual);
+    if (novoNome != null && novoNome.isNotEmpty) {
+      try {
+        await TreinoService().editarGrupo(id, novoNome);
 
-      await _carregarGrupos();
+        await _carregarGrupos();
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Grupo editado com sucesso!')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao editar grupo: $e')),
-      );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Exercício criado com sucesso!'),
+            backgroundColor: Colors.greenAccent.shade100,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao criar exercício'),
+            backgroundColor: Colors.redAccent.shade100,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
-}
-
 
   Future<void> _excluirGrupo(String id, String nomeGrupo) async {
-  final confirmar = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Excluir grupo'),
-      content: Text('Tem certeza que deseja excluir "$nomeGrupo"?'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancelar'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text('Excluir', style: TextStyle(color: Colors.red)),
-        ),
-      ],
-    ),
-  );
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir grupo'),
+        content: Text('Tem certeza que deseja excluir "$nomeGrupo"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
 
-  if (confirmar == true) {
-    try {
-      await TreinoService().excluirGrupo(id);
+    if (confirmar == true) {
+      try {
+        await TreinoService().excluirGrupo(id);
 
-      await _carregarGrupos();
+        await _carregarGrupos();
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Grupo excluído com sucesso')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao excluir grupo: $e')),
-      );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Grupo excluído com sucesso')),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao excluir grupo: $e')));
+      }
     }
   }
-}
 
   Future<void> _confirmarExclusaoExercicio(
     Map<String, dynamic> exercicio,
@@ -276,14 +281,13 @@ class _TreinosPageState extends State<TreinosPage> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Salvar'),
+            child: const Text(' Salvar '),
           ),
         ],
       ),
     );
 
     if (confirmar == true) {
-      // Mostra loading enquanto cria
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -304,8 +308,8 @@ class _TreinosPageState extends State<TreinosPage> {
       await _carregarGrupos();
 
       if (mounted) {
-        Navigator.pop(context); // fecha o loading
-        setState(() {}); // força atualização imediata
+        Navigator.pop(context);
+        setState(() {});
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -428,7 +432,7 @@ class _TreinosPageState extends State<TreinosPage> {
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(nomeInicial.isEmpty ? 'Criar Grupo' : 'Editar Grupo'),
+        title: Text(nomeInicial.isEmpty ? 'Criar Grupo' : 'Editar Nome do Grupo'),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -474,31 +478,42 @@ class _TreinosPageState extends State<TreinosPage> {
           });
         },
         leading: const Icon(Icons.fitness_center, color: Colors.deepPurple),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                grupo['nome'] ?? 'Grupo sem nome',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.edit, color: Colors.grey[700]),
-                  onPressed: () => _editarGrupo(grupoId, grupo['nome']),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.redAccent),
-                  onPressed: () => _excluirGrupo(grupoId, grupo['nome']),
-                ),
-              ],
-            ),
-          ],
+        title:Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    Expanded(
+      child: Text(
+        grupo['nome'] ?? 'Grupo sem nome',
+        style: const TextStyle(fontWeight: FontWeight.bold),
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+    PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, color: Colors.redAccent),
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: 'editar',
+          child: Text('Editar'),
         ),
+        const PopupMenuItem(
+          value: 'desativar',
+          child: Text(
+            'Desativar',
+            style: TextStyle(color: Colors.redAccent),
+          ),
+        ),
+      ],
+      onSelected: (value) {
+        if (value == 'editar') {
+          _editarGrupo(grupoId, grupo['nome']);
+        } else if (value == 'desativar') {
+          _excluirGrupo(grupoId, grupo['nome']);
+        }
+      },
+    ),
+  ],
+),
+
         subtitle: Row(
           children: [
             Text('$count exercício${count == 1 ? '' : 's'}'),
@@ -510,17 +525,12 @@ class _TreinosPageState extends State<TreinosPage> {
         ),
         children: [
           if (exercicios.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(12.0),
+            const Padding(
+              padding: EdgeInsets.all(12.0),
               child: Column(
                 children: [
-                  const Text('Nenhum exercício neste grupo'),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: () => _adicionarExercicio(grupoId),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Adicionar exercício'),
-                  ),
+                  Text('Nenhum exercício neste grupo'),
+                  SizedBox(height: 8),
                 ],
               ),
             ),

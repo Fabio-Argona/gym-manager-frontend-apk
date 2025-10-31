@@ -34,50 +34,106 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _criarGrupo() {
-  final TextEditingController nomeGrupoController = TextEditingController();
+  final TextEditingController nomeGrupoController =
+      TextEditingController(text: 'Treino - ');
 
   showDialog(
     context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Novo Grupo de Treino'),
-      content: TextFormField(
-        controller: nomeGrupoController,
-        decoration: const InputDecoration(
-          labelText: 'Nome do grupo',
-          border: OutlineInputBorder(),
+    builder: (context) => Dialog(
+      backgroundColor: const Color(0xFF1E1E1E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Criar Grupo de Treino',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: nomeGrupoController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Nome do grupo',
+                labelStyle: const TextStyle(color: Colors.white70),
+                filled: true,
+                fillColor: const Color(0xFF2C2C2C),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurpleAccent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    elevation: 4,
+                  ),
+                  onPressed: () async {
+                    final nomeGrupo = nomeGrupoController.text.trim();
+                    if (nomeGrupo.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Digite um nome para o grupo'),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                      return;
+                    }
+
+                    try {
+                      await TreinoService().criarGrupo(nomeGrupo);
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content:
+                              Text('Grupo "$nomeGrupo" criado com sucesso'),
+                          backgroundColor: Colors.greenAccent.shade100,
+                        ),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Erro: ${e.toString()}'),
+                          backgroundColor: Colors.redAccent.shade100,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text(
+                    'Salvar',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            final nomeGrupo = nomeGrupoController.text.trim();
-            if (nomeGrupo.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Digite um nome para o grupo')),
-              );
-              return;
-            }
-
-            try {
-              await TreinoService().criarGrupo(nomeGrupo);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Grupo "$nomeGrupo" criado com sucesso')),
-              );
-              Navigator.pop(context);
-              // TODO: atualizar lista de grupos na tela de treinos
-            } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Erro: ${e.toString()}')),
-              );
-            }
-          },
-          child: const Text('Salvar'),
-        ),
-      ],
     ),
   );
 }
@@ -170,21 +226,34 @@ class _HomePageState extends State<HomePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Bem-vindo',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${widget.nome}!',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.amberAccent,
+                        RichText(
+                          text: TextSpan(
+                            children: [
+                              const TextSpan(
+                                text: 'Bem-vindo, ',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              TextSpan(
+                                text: widget.nome,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.amberAccent,
+                                ),
+                              ),
+                              const TextSpan(
+                                text: '!',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.amberAccent,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

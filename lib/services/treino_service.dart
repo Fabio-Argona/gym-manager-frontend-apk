@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TreinoService {
-  final String baseUrl = 'https://gym-manager-java.onrender.com';
+  final String baseUrl = 'http://18.222.56.92:8080';
 
   Future<List<Map<String, dynamic>>> listarGrupos() async {
   final prefs = await SharedPreferences.getInstance();

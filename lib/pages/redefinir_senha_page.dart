@@ -18,9 +18,10 @@ class _RedefinirSenhaPageState extends State<RedefinirSenhaPage> {
     setState(() => isLoading = true);
 
     final response = await http.post(
-      Uri.parse('https://gym-manager-java.onrender.com/auth/resetar-senha'),
+      Uri.parse('http://18.222.56.92:8080/auth/resetar-senha'),
       headers: {'Content-Type': 'application/json'},
-      body: '''
+      body:
+          '''
       {
         "token": "${tokenController.text.trim()}",
         "novaSenha": "${senhaController.text.trim()}"
@@ -79,8 +80,9 @@ class _RedefinirSenhaPageState extends State<RedefinirSenhaPage> {
                   border: OutlineInputBorder(),
                   labelStyle: TextStyle(color: Colors.white),
                 ),
-                validator: (value) =>
-                    value != null && value.length > 10 ? null : 'Token inválido',
+                validator: (value) => value != null && value.length > 10
+                    ? null
+                    : 'Token inválido',
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -95,8 +97,9 @@ class _RedefinirSenhaPageState extends State<RedefinirSenhaPage> {
                   border: OutlineInputBorder(),
                   labelStyle: TextStyle(color: Colors.white),
                 ),
-                validator: (value) =>
-                    value != null && value.length >= 6 ? null : 'Mínimo 6 caracteres',
+                validator: (value) => value != null && value.length >= 6
+                    ? null
+                    : 'Mínimo 6 caracteres',
               ),
               const SizedBox(height: 24),
               isLoading

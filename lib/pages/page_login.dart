@@ -68,11 +68,8 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
 
-          // 🔳 Camada escura por cima da imagem
-          // ignore: deprecated_member_use
           Container(color: Colors.black.withOpacity(0.3)),
 
-          // 🔳 Conteúdo do login
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(24),
@@ -81,8 +78,13 @@ class _LoginPageState extends State<LoginPage> {
                 child: ListView(
                   children: [
                     const SizedBox(height: 32),
-                    const Image(
-                      image: AssetImage('assets/images/fulltreino.png'),
+                    const Text(
+                      'Full Performance',
+                      style: TextStyle(
+                        fontSize: 34,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -94,6 +96,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
+
                     Text(
                       isLogin
                           ? "Acesse sua conta para continuar"
@@ -176,7 +179,9 @@ class _LoginPageState extends State<LoginPage> {
                           },
                           child: const Text(
                             "Esqueci minha senha",
-                            style: TextStyle(color: Colors.deepPurple),
+                            style: TextStyle(
+                              color: Color.fromARGB(255, 144, 116, 219),
+                            ),
                           ),
                         ),
                       ),
@@ -226,7 +231,7 @@ class _LoginPageState extends State<LoginPage> {
 
                                   if (success) {
                                     final nomeSalvo = await authService
-                                        .getNomeSalvo(); 
+                                        .getNomeSalvo();
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(

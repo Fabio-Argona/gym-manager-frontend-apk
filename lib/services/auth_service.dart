@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/date_utils.dart' as meu_date_utils;
 
 class AuthService extends ChangeNotifier {
-  final String baseUrl = 'https://gym-manager-java.onrender.com';
+  final String baseUrl = 'http://18.222.56.92:8080';
 
   // LOGIN
   Future<bool> login(String email, String senha) async {

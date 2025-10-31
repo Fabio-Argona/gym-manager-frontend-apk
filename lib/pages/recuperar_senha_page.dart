@@ -23,7 +23,7 @@ class _RecuperarSenhaPageState extends State<RecuperarSenhaPage> {
     setState(() => isLoading = true);
 
     final response = await http.post(
-      Uri.parse('https://gym-manager-java.onrender.com/auth/recuperar-senha'),
+      Uri.parse('http://18.222.56.92:8080/auth/recuperar-senha'),
       headers: {'Content-Type': 'application/json'},
       body: '{"email": "${emailController.text.trim()}"}',
     );
