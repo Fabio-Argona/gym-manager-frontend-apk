@@ -112,7 +112,7 @@ class _TreinosPageState extends State<TreinosPage> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Exercício criado com sucesso!'),
+            content: const Text('Exercício criado com sucesso!'),
             backgroundColor: Colors.greenAccent.shade100,
             behavior: SnackBarBehavior.floating,
           ),
@@ -121,7 +121,7 @@ class _TreinosPageState extends State<TreinosPage> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro ao criar exercício'),
+            content: const Text('Erro ao criar exercício'),
             backgroundColor: Colors.redAccent.shade100,
             behavior: SnackBarBehavior.floating,
           ),
@@ -232,7 +232,7 @@ class _TreinosPageState extends State<TreinosPage> {
                 textCapitalization: TextCapitalization.words,
               ),
               DropdownButtonFormField<String>(
-                value: grupoSelecionado,
+                initialValue: grupoSelecionado,
                 decoration: const InputDecoration(labelText: 'Grupo muscular'),
                 items: gruposMusculares
                     .map((g) => DropdownMenuItem(value: g, child: Text(g)))
@@ -579,8 +579,9 @@ class _TreinosPageState extends State<TreinosPage> {
                             ],
                             onSelected: (value) {
                               if (value == 'editar') _editarExercicio(ex);
-                              if (value == 'excluir')
+                              if (value == 'excluir') {
                                 _confirmarExclusaoExercicio(ex);
+                              }
                             },
                           ),
                         ],

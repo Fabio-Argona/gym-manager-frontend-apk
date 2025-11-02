@@ -8,18 +8,39 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  # Gerenciamento de estado
   provider: ^6.1.1
+
+  # Requisições HTTP
   http: ^1.5.0
+
+  # Toasts visuais
   fluttertoast: ^8.2.2
+
+  # Armazenamento local
   shared_preferences: ^2.2.2
+
+  # Gerador de UUIDs
   uuid: ^4.0.0
+
+  # Máscara para campos de texto
   mask_text_input_formatter: ^2.4.0
+
+  # Formatação de datas e números
   intl: ^0.18.1
+
+  # Upload de arquivos compatível com Web
+  file_picker: ^5.2.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  # Lints e boas práticas
   flutter_lints: ^3.0.1
+
+  # Ícones personalizados
   flutter_launcher_icons: ^0.13.1
 
 flutter_icons:

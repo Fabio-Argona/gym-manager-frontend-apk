@@ -40,15 +40,7 @@ class FooterNav extends StatelessWidget {
               onPressed: () => onItemTapped(1),
             ),
           ),
-          Expanded(
-            child: IconButton(
-              icon: Icon(
-                Icons.person,
-                color: selectedIndex == 2 ? Colors.purple : Colors.grey,
-              ),
-              onPressed: () => onItemTapped(2),
-            ),
-          ),
+        
           if (selectedIndex == 0)
             Expanded(
               child: IconButton(
