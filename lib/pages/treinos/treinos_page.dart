@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_treinoabc/pages/home_page.dart';
 import 'package:flutter_application_treinoabc/services/treino_service.dart';
 import 'package:flutter_application_treinoabc/services/exercicio_service.dart';
 
@@ -82,21 +83,36 @@ class _TreinosPageState extends State<TreinosPage> {
   Future<void> _criarGrupo() async {
     final nome = await _mostrarDialogoGrupo();
     if (nome != null && nome.isNotEmpty) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
       try {
-        await TreinoService().criarGrupo(nome);
+        final novoGrupo = await TreinoService().criarGrupo(nome);
 
-        // Recarrega os grupos e força atualização
-        await _carregarGrupos();
+        if (mounted) {
+          Navigator.pop(context); // fecha o loading
 
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Grupo criado com sucesso!')),
-        );
+          // Atualiza a HomePage inteira
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => HomePage(nome: widget.nome)),
+          );
+
+          // Mostra confirmação
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Grupo criado com sucesso!')),
+          );
+        }
       } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao criar grupo: $e')));
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Erro ao criar grupo: $e')));
+        }
       }
     }
   }
@@ -305,16 +321,13 @@ class _TreinosPageState extends State<TreinosPage> {
         'grupoId': grupoId,
       });
 
-      await _carregarGrupos();
-
       if (mounted) {
+        await _carregarGrupos();
         Navigator.pop(context);
-        setState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Exercício adicionado com sucesso!')),
+        );
       }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Exercício adicionado com sucesso!')),
-      );
     }
   }
 
@@ -432,7 +445,9 @@ class _TreinosPageState extends State<TreinosPage> {
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(nomeInicial.isEmpty ? 'Criar Grupo' : 'Editar Nome do Grupo'),
+        title: Text(
+          nomeInicial.isEmpty ? 'Criar Grupo' : 'Editar Nome do Grupo',
+        ),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -477,42 +492,39 @@ class _TreinosPageState extends State<TreinosPage> {
             }
           });
         },
-        leading: const Icon(Icons.fitness_center, color: Colors.deepPurple),
-        title:Row(
-  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  children: [
-    Expanded(
-      child: Text(
-        grupo['nome'] ?? 'Grupo sem nome',
-        style: const TextStyle(fontWeight: FontWeight.bold),
-        overflow: TextOverflow.ellipsis,
-      ),
-    ),
-    PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert, color: Colors.redAccent),
-      itemBuilder: (context) => [
-        const PopupMenuItem(
-          value: 'editar',
-          child: Text('Editar'),
+
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                grupo['nome'] ?? 'Grupo sem nome',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.redAccent),
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'editar', child: Text('Editar')),
+                const PopupMenuItem(
+                  value: 'desativar',
+                  child: Text(
+                    'Desativar',
+                    style: TextStyle(color: Colors.redAccent),
+                  ),
+                ),
+              ],
+              onSelected: (value) {
+                if (value == 'editar') {
+                  _editarGrupo(grupoId, grupo['nome']);
+                } else if (value == 'desativar') {
+                  _excluirGrupo(grupoId, grupo['nome']);
+                }
+              },
+            ),
+          ],
         ),
-        const PopupMenuItem(
-          value: 'desativar',
-          child: Text(
-            'Desativar',
-            style: TextStyle(color: Colors.redAccent),
-          ),
-        ),
-      ],
-      onSelected: (value) {
-        if (value == 'editar') {
-          _editarGrupo(grupoId, grupo['nome']);
-        } else if (value == 'desativar') {
-          _excluirGrupo(grupoId, grupo['nome']);
-        }
-      },
-    ),
-  ],
-),
 
         subtitle: Row(
           children: [

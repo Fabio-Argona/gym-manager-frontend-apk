@@ -31,29 +31,30 @@ class TreinoService {
     }
   }
 
-  // ➕ Cria um novo grupo
-  Future<void> criarGrupo(String nome) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
-    final alunoId = prefs.getString('alunoId') ?? '';
+ Future<Map<String, dynamic>> criarGrupo(String nome) async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('token') ?? '';
+  final alunoId = prefs.getString('alunoId') ?? '';
 
-    if (token.isEmpty || alunoId.isEmpty) {
-      throw Exception('Credenciais inválidas');
-    }
-
-    final response = await http.post(
-      Uri.parse('$baseUrl/grupos'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'nome': nome, 'alunoId': alunoId}),
-    );
-
-    if (response.statusCode != 201) {
-      throw Exception('Erro ao criar grupo: ${response.body}');
-    }
+  if (token.isEmpty || alunoId.isEmpty) {
+    throw Exception('Credenciais inválidas');
   }
+
+  final response = await http.post(
+    Uri.parse('$baseUrl/grupos'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+    body: jsonEncode({'nome': nome, 'alunoId': alunoId}),
+  );
+
+  if (response.statusCode != 201) {
+    throw Exception('Erro ao criar grupo: ${response.body}');
+  }
+
+  return jsonDecode(response.body);
+}
 
   // ✏️ Edita o nome de um grupo
   Future<void> editarGrupo(String grupoId, String novoNome) async {
