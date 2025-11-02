@@ -31,8 +31,9 @@ dependencies:
   intl: ^0.18.1
 
   # Upload de arquivos compatível com Web
-  file_picker: ^5.2.6
+  file_picker: ^10.3.3
 
+  # Navegação de páginas
 dev_dependencies:
   flutter_test:
     sdk: flutter

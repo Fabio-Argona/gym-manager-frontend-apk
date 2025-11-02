@@ -35,20 +35,14 @@ class FooterNav extends StatelessWidget {
             child: IconButton(
               icon: Icon(
                 Icons.bar_chart,
-                color: selectedIndex == 1 ? Colors.purple : Colors.grey,
+                color: selectedIndex == 1 ? Colors.purple : Colors.greenAccent,
               ),
               onPressed: () => onItemTapped(1),
             ),
           ),
         
           if (selectedIndex == 0)
-            Expanded(
-              child: IconButton(
-                icon: const Icon(Icons.add, color: Colors.greenAccent),
-                tooltip: 'Adicionar grupo',
-                onPressed: onAddGrupo,
-              ),
-            ),
+           
           Expanded(
             child: IconButton(
               icon: const Icon(Icons.logout, color: Colors.redAccent),
