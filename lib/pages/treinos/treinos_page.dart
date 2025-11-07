@@ -59,26 +59,39 @@ class _TreinosPageState extends State<TreinosPage> {
   }
 
   Future<List<Map<String, dynamic>>> _carregarGruposComExercicios() async {
-    final grupos = await TreinoService().listarGrupos();
-    final exercicios = await ExercicioService().listarExercicios();
+  final grupos = await TreinoService().listarGrupos();
+  final exercicios = await ExercicioService().listarExercicios();
 
-    final Map<String, List<Map<String, dynamic>>> exerciciosPorGrupo = {};
-    for (var ex in exercicios) {
-      final grupoId = ex['grupoId'] ?? ex['grupo_id'];
-      if (grupoId != null) {
-        exerciciosPorGrupo.putIfAbsent(grupoId, () => []).add(ex);
-      }
+  final Map<String, List<Map<String, dynamic>>> exerciciosPorGrupo = {};
+  for (var ex in exercicios) {
+    final grupoId = ex['grupoId'] ?? ex['grupo_id'];
+    if (grupoId != null) {
+      exerciciosPorGrupo.putIfAbsent(grupoId, () => []).add(ex);
     }
-
-    for (var grupo in grupos) {
-      final id = grupo['id'];
-      grupo['exercicios'] = (exerciciosPorGrupo[id] ?? [])
-          .where((ex) => ex['ativo'] == true)
-          .toList();
-    }
-
-    return grupos;
   }
+
+  for (var grupo in grupos) {
+    final id = grupo['id'];
+    var listaExercicios = (exerciciosPorGrupo[id] ?? [])
+        .where((ex) => ex['ativo'] == true)
+        .toList();
+
+    listaExercicios.sort((a, b) {
+      final ga = a['grupoMuscular']?.toString() ?? '';
+      final gb = b['grupoMuscular']?.toString() ?? '';
+      return ga.compareTo(gb);
+    });
+
+    for (var ex in listaExercicios) {
+      ex.remove('grupoMuscular');
+    }
+
+    grupo['exercicios'] = listaExercicios;
+  }
+
+  return grupos;
+}
+
 
   Future<void> _criarGrupo() async {
     final nome = await _mostrarDialogoGrupo();
@@ -556,7 +569,7 @@ class _TreinosPageState extends State<TreinosPage> {
                   border: Border.all(color: Colors.black54, width: 1),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(12.0),
+                  padding: const EdgeInsets.all(8.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -566,7 +579,7 @@ class _TreinosPageState extends State<TreinosPage> {
                           Text(
                             ex['nome'] ?? 'Exercício',
                             style: const TextStyle(
-                              fontSize: 16,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
@@ -598,9 +611,8 @@ class _TreinosPageState extends State<TreinosPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 2),
                       Text(
-                        '${ex['grupoMuscular'] ?? '-'}   '
                         'Séries: ${ex['series'] ?? '-'}   '
                         'Repet: ${ex['repMin'] ?? '-'}-${ex['repMax'] ?? '-'}   '
                         'Peso: ${ex['pesoInicial'] != null ? double.parse(ex['pesoInicial'].toString()).toStringAsFixed(1) : '-'} kg',
