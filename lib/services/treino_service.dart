@@ -79,8 +79,8 @@ class TreinoService {
     }
   }
 
-  // ❌ Exclui um grupo
-  Future<void> excluirGrupo(String grupoId) async {
+    // ❌ Exclui um grupo junto com seus exercícios vinculados
+  Future<void> excluirGrupoComExercicios(String grupoId) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token') ?? '';
 
@@ -89,14 +89,15 @@ class TreinoService {
     }
 
     final response = await http.delete(
-      Uri.parse('$baseUrl/grupos/$grupoId'),
+      Uri.parse('$baseUrl/grupos/$grupoId/com-exercicios'),
       headers: {'Authorization': 'Bearer $token'},
     );
 
-    if (response.statusCode != 204) {
-      throw Exception('Erro ao excluir grupo: ${response.body}');
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('Erro ao excluir grupo e exercícios: ${response.body}');
     }
   }
+
 
   // 📤 Upload de imagem do aluno (Flutter Web)
   Future<String> uploadImagemWeb() async {

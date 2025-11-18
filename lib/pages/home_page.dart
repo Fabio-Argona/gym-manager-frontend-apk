@@ -90,8 +90,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _criarGrupo() {
-    final TextEditingController nomeGrupoController =
-        TextEditingController(text: 'Treino - ');
+    final TextEditingController nomeGrupoController = TextEditingController(
+      text: 'Treino - ',
+    );
 
     showDialog(
       context: context,
@@ -104,11 +105,14 @@ class _HomePageState extends State<HomePage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Criar Grupo de Treino',
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white)),
+              const Text(
+                'Criar Grupo de Treino',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: nomeGrupoController,
@@ -119,7 +123,8 @@ class _HomePageState extends State<HomePage> {
                   filled: true,
                   fillColor: const Color(0xFF2C2C2C),
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -127,18 +132,24 @@ class _HomePageState extends State<HomePage> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancelar',
-                          style: TextStyle(color: Colors.white70))),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      'Cancelar',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ),
                   const SizedBox(width: 12),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.deepPurpleAccent,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30)),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
                       elevation: 4,
                     ),
                     onPressed: () async {
@@ -146,8 +157,9 @@ class _HomePageState extends State<HomePage> {
                       if (nomeGrupo.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                              content: Text('Digite um nome para o grupo'),
-                              backgroundColor: Colors.redAccent),
+                            content: Text('Digite um nome para o grupo'),
+                            backgroundColor: Colors.redAccent,
+                          ),
                         );
                         return;
                       }
@@ -157,21 +169,25 @@ class _HomePageState extends State<HomePage> {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                              content:
-                                  Text('Grupo "$nomeGrupo" criado com sucesso'),
-                              backgroundColor:
-                                  Colors.greenAccent.shade100),
+                            content: Text(
+                              'Grupo "$nomeGrupo" criado com sucesso',
+                            ),
+                            backgroundColor: Colors.greenAccent.shade100,
+                          ),
                         );
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                              content: Text('Erro: ${e.toString()}'),
-                              backgroundColor: Colors.redAccent.shade100),
+                            content: Text('Erro: ${e.toString()}'),
+                            backgroundColor: Colors.redAccent.shade100,
+                          ),
                         );
                       }
                     },
-                    child: const Text('Salvar',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Salvar',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ],
               ),
@@ -190,11 +206,13 @@ class _HomePageState extends State<HomePage> {
         content: const Text('Tem certeza que deseja sair da conta?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Sair', style: TextStyle(color: Colors.red))),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Sair', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -212,11 +230,13 @@ class _HomePageState extends State<HomePage> {
         content: const Text('Aqui você pode editar seu nome, foto ou dados.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
           ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Salvar')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Salvar'),
+          ),
         ],
       ),
     );
@@ -235,7 +255,7 @@ class _HomePageState extends State<HomePage> {
 
   String _mensagemMotivadora() {
     final frases = [
-      'Acredite no processo 💪',
+      'Bora treinar e conquistar seus objetivos! 💪',
       'Cada treino é um passo à frente 🚀',
       'Foco, força e fé 🔥',
       'A disciplina vence o cansaço 🧠',
@@ -246,150 +266,137 @@ class _HomePageState extends State<HomePage> {
     return frases.first;
   }
 
- @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: Colors.black,
-    appBar: AppBar(
-      automaticallyImplyLeading: false,
-      backgroundColor: Colors.transparent, // deixa transparente para mostrar o fundo
-      elevation: 0, // remove sombra
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                _saudacaoDoDia(),
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor:
+            Colors.transparent, // deixa transparente para mostrar o fundo
+        elevation: 0, // remove sombra
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _saudacaoDoDia(),
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 5),
-              Text(
-                primeiroNome,
-                style: const TextStyle(
-                  color: Colors.amberAccent,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(width: 5),
+                Text(
+                  primeiroNome,
+                  style: const TextStyle(
+                    color: Colors.amberAccent,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _mensagemMotivadora(),
+              style: const TextStyle(
+                color: Colors.grey,
+                fontSize: 13,
+                fontStyle: FontStyle.italic,
               ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _mensagemMotivadora(),
-            style: const TextStyle(
-              color: Colors.grey,
-              fontSize: 13,
-              fontStyle: FontStyle.italic,
+            ),
+          ],
+        ),
+        centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: PopupMenuButton<String>(
+              onSelected: (value) {
+                switch (value) {
+                  case 'editar':
+                    _editarPerfil();
+                    break;
+                  case 'imagem':
+                    _selecionarImagem();
+                    break;
+                  case 'sair':
+                    _confirmarLogout();
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'editar',
+                  child: Text('Editar perfil'),
+                ),
+                const PopupMenuItem(
+                  value: 'imagem',
+                  child: Text('Trocar imagem'),
+                ),
+                const PopupMenuItem(value: 'sair', child: Text('Sair')),
+              ],
+              child: CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.deepPurple,
+                backgroundImage: imagemUrl != null
+                    ? NetworkImage(imagemUrl!)
+                    : null,
+                child: imagemUrl == null
+                    ? Text(
+                        widget.nome[0].toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : null,
+              ),
             ),
           ),
         ],
       ),
-      centerTitle: true,
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: PopupMenuButton<String>(
-            onSelected: (value) {
-              switch (value) {
-                case 'editar':
-                  _editarPerfil();
-                  break;
-                case 'imagem':
-                  _selecionarImagem();
-                  break;
-                case 'sair':
-                  _confirmarLogout();
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'editar', child: Text('Editar perfil')),
-              const PopupMenuItem(value: 'imagem', child: Text('Trocar imagem')),
-              const PopupMenuItem(value: 'sair', child: Text('Sair')),
-            ],
-            child: CircleAvatar(
-              radius: 20,
-              backgroundColor: Colors.deepPurple,
-              backgroundImage:
-                  imagemUrl != null ? NetworkImage(imagemUrl!) : null,
-              child: imagemUrl == null
-                  ? Text(
-                      widget.nome[0].toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  : null,
+      body: Stack(
+        children: [
+          // 🔳 Imagem de fundo
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/Copilot_20251029_183912.png'),
+                repeat: ImageRepeat.repeat,
+                alignment: Alignment.topLeft,
+                scale: 1.0,
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-    body: Stack(
-      children: [
-        // 🔳 Imagem de fundo
-        Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/Copilot_20251029_183912.png'),
-              repeat: ImageRepeat.repeat,
-              alignment: Alignment.topLeft,
-              scale: 1.0,
+
+          // 🔳 Camada de cor semi-transparente
+          Container(color: Colors.black.withOpacity(0.3)),
+
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 10),
+                // 🔘 Botão de Criar Treino
+                
+                const SizedBox(height: 10),
+                Expanded(child: _pages[_selectedIndex]),
+              ],
             ),
           ),
-        ),
-
-        // 🔳 Camada de cor semi-transparente
-        Container(color: Colors.black.withOpacity(0.3)),
-
-        // 🔳 Conteúdo principal
-        SafeArea(
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const SizedBox(height: 10),
-      // 🔘 Botão de Criar Treino
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: ElevatedButton.icon(
-          onPressed: _criarGrupo,
-          icon: const Icon(Icons.add, size: 12), // reduzindo tamanho do ícone
-          label: const Text(
-            'Treino  ',
-            style: TextStyle(fontSize: 12), // reduzindo tamanho do texto
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.deepPurple,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // 50% menor
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20)),
-          ),
-        ),
+        ],
       ),
-      const SizedBox(height: 10),
-      Expanded(child: _pages[_selectedIndex]),
-    ],
-  ),
-)
-
-      ],
-    ),
-    bottomNavigationBar: FooterNav(
-      selectedIndex: _selectedIndex,
-      onItemTapped: _onItemTapped,
-      onAddGrupo: _criarGrupo,
-      onLogout: _confirmarLogout,
-    ),
-  );
-}
-
-
+      bottomNavigationBar: FooterNav(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
+        onAddGrupo: _criarGrupo,
+        onLogout: _confirmarLogout,
+      ),
+    );
+  }
 }

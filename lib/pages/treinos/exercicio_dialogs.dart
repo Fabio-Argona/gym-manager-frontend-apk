@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_treinoabc/services/exercicio_service.dart';
 import 'exercicio_form_field.dart';
 
-void mostrarCriarExercicio(BuildContext context, String grupoId, VoidCallback onAtualizar) {
+void mostrarCriarExercicio(
+  BuildContext context,
+  String grupoId,
+  VoidCallback onAtualizar,
+) {
   final nomeController = TextEditingController();
   final grupoController = TextEditingController();
   final seriesController = TextEditingController();
@@ -15,7 +19,10 @@ void mostrarCriarExercicio(BuildContext context, String grupoId, VoidCallback on
     context: context,
     builder: (_) => AlertDialog(
       backgroundColor: Colors.black,
-      title: const Text('Novo Exercício', style: TextStyle(color: Colors.white)),
+      title: const Text(
+        'Novo Exercício',
+        style: TextStyle(color: Colors.white),
+      ),
       content: SingleChildScrollView(
         child: Column(
           children: [
@@ -35,7 +42,9 @@ void mostrarCriarExercicio(BuildContext context, String grupoId, VoidCallback on
           child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
         ),
         ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurpleAccent),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.deepPurpleAccent,
+          ),
           onPressed: () async {
             final novo = {
               'grupoId': grupoId,
@@ -51,9 +60,27 @@ void mostrarCriarExercicio(BuildContext context, String grupoId, VoidCallback on
             try {
               await ExercicioService().criarExercicio(novo);
               Navigator.pop(context);
-              onAtualizar();
+              onAtualizar(); // ✅ força atualização da lista
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Exercício criado com sucesso'),
+                    backgroundColor: Colors.green,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
             } catch (e) {
-              print('Erro ao criar: $e');
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Erro ao criar exercício: $e'),
+                    backgroundColor: Colors.redAccent,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
             }
           },
           child: const Text('Salvar'),
@@ -62,6 +89,7 @@ void mostrarCriarExercicio(BuildContext context, String grupoId, VoidCallback on
     ),
   );
 }
+
 
 void mostrarEditarExercicio(BuildContext context, Map<String, dynamic> exercicio, VoidCallback onAtualizar) {
   final nomeController = TextEditingController(text: exercicio['nome'] ?? '');

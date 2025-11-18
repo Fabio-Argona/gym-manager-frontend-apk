@@ -22,6 +22,23 @@ class _TreinosPageState extends State<TreinosPage> {
     _carregarGrupos();
   }
 
+  // Função utilitária para SnackBar
+  void showCustomSnackBar(
+    BuildContext context,
+    String mensagem, {
+    Color backgroundColor = Colors.black87,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensagem),
+        backgroundColor: backgroundColor,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      ),
+    );
+  }
+
   Future<void> _carregarGrupos() async {
     setState(() => _carregando = true);
 
@@ -52,9 +69,11 @@ class _TreinosPageState extends State<TreinosPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _carregando = false);
-      ScaffoldMessenger.of(
+      showCustomSnackBar(
         context,
-      ).showSnackBar(SnackBar(content: Text('Erro ao carregar grupos: $e')));
+        'Erro ao carregar grupos: $e',
+        backgroundColor: Colors.redAccent.shade100,
+      );
     }
   }
 
@@ -72,9 +91,21 @@ class _TreinosPageState extends State<TreinosPage> {
 
     for (var grupo in grupos) {
       final id = grupo['id'];
-      grupo['exercicios'] = (exerciciosPorGrupo[id] ?? [])
+      var listaExercicios = (exerciciosPorGrupo[id] ?? [])
           .where((ex) => ex['ativo'] == true)
           .toList();
+
+      listaExercicios.sort((a, b) {
+        final ga = a['grupoMuscular']?.toString() ?? '';
+        final gb = b['grupoMuscular']?.toString() ?? '';
+        return ga.compareTo(gb);
+      });
+
+      for (var ex in listaExercicios) {
+        ex.remove('grupoMuscular');
+      }
+
+      grupo['exercicios'] = listaExercicios;
     }
 
     return grupos;
@@ -95,23 +126,28 @@ class _TreinosPageState extends State<TreinosPage> {
         if (mounted) {
           Navigator.pop(context); // fecha o loading
 
-          // Atualiza a HomePage inteira
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => HomePage(nome: widget.nome)),
-          );
+          setState(() {
+            _grupos.add({
+              'id': novoGrupo['id'],
+              'nome': novoGrupo['nome'],
+              'exercicios': [],
+            });
+          });
 
-          // Mostra confirmação
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Grupo criado com sucesso!')),
+          showCustomSnackBar(
+            context,
+            'Grupo "${novoGrupo['nome']}" criado com sucesso!',
+            backgroundColor: Colors.green,
           );
         }
       } catch (e) {
         if (mounted) {
           Navigator.pop(context);
-          ScaffoldMessenger.of(
+          showCustomSnackBar(
             context,
-          ).showSnackBar(SnackBar(content: Text('Erro ao criar grupo: $e')));
+            'Erro ao criar grupo: $e',
+            backgroundColor: Colors.redAccent.shade100,
+          );
         }
       }
     }
@@ -122,25 +158,20 @@ class _TreinosPageState extends State<TreinosPage> {
     if (novoNome != null && novoNome.isNotEmpty) {
       try {
         await TreinoService().editarGrupo(id, novoNome);
-
         await _carregarGrupos();
 
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Exercício criado com sucesso!'),
-            backgroundColor: Colors.greenAccent.shade100,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showCustomSnackBar(
+          context,
+          'Grupo editado com sucesso!',
+          backgroundColor: Colors.greenAccent.shade100,
         );
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Erro ao criar exercício'),
-            backgroundColor: Colors.redAccent.shade100,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showCustomSnackBar(
+          context,
+          'Erro ao editar grupo',
+          backgroundColor: Colors.redAccent.shade100,
         );
       }
     }
@@ -151,7 +182,9 @@ class _TreinosPageState extends State<TreinosPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Excluir grupo'),
-        content: Text('Tem certeza que deseja excluir "$nomeGrupo"?'),
+        content: Text(
+          'Tem certeza que deseja excluir "$nomeGrupo"? Todos os exercícios serão removidos.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -167,19 +200,23 @@ class _TreinosPageState extends State<TreinosPage> {
 
     if (confirmar == true) {
       try {
-        await TreinoService().excluirGrupo(id);
-
+        await TreinoService().excluirGrupoComExercicios(id);
         await _carregarGrupos();
-
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Grupo excluído com sucesso')),
-        );
+        if (mounted) {
+          showCustomSnackBar(
+            context,
+            'Grupo e exercícios excluídos com sucesso',
+            backgroundColor: Colors.green,
+          );
+        }
       } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao excluir grupo: $e')));
+        if (mounted) {
+          showCustomSnackBar(
+            context,
+            'Erro ao excluir grupo: $e',
+            backgroundColor: Colors.redAccent.shade100,
+          );
+        }
       }
     }
   }
@@ -206,10 +243,23 @@ class _TreinosPageState extends State<TreinosPage> {
     );
 
     if (confirmar == true) {
-      ExercicioService().desativarExercicio(
+      await ExercicioService().editarExercicio({
+        'id': exercicio['id'],
+        'grupoId': exercicio['grupoId'],
+        'nome': exercicio['nome'],
+        'grupoMuscular': exercicio['grupoMuscular'],
+        'series': exercicio['series'],
+        'repMin': exercicio['repMin'],
+        'repMax': exercicio['repMax'],
+        'pesoInicial': exercicio['pesoInicial'],
+        'observacao': exercicio['observacao'],
+        'ativo': false,
+      });
+      await _carregarGrupos();
+      showCustomSnackBar(
         context,
-        exercicio,
-        _carregarGrupos,
+        'Exercício excluído com sucesso!',
+        backgroundColor: Colors.green,
       );
     }
   }
@@ -324,8 +374,10 @@ class _TreinosPageState extends State<TreinosPage> {
       if (mounted) {
         await _carregarGrupos();
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Exercício adicionado com sucesso!')),
+        showCustomSnackBar(
+          context,
+          'Exercício adicionado com sucesso!',
+          backgroundColor: Colors.green,
         );
       }
     }
@@ -333,9 +385,6 @@ class _TreinosPageState extends State<TreinosPage> {
 
   Future<void> _editarExercicio(Map<String, dynamic> exercicio) async {
     final nomeController = TextEditingController(text: exercicio['nome'] ?? '');
-    final grupoController = TextEditingController(
-      text: exercicio['grupoMuscular'] ?? '',
-    );
     final seriesController = TextEditingController(
       text: exercicio['series']?.toString() ?? '',
     );
@@ -352,6 +401,19 @@ class _TreinosPageState extends State<TreinosPage> {
       text: exercicio['observacao'] ?? '',
     );
 
+    final gruposMusculares = [
+      'Peito',
+      'Costas',
+      'Pernas',
+      'Ombros',
+      'Bíceps',
+      'Tríceps',
+      'Abdômen',
+      'Glúteos',
+    ];
+    String grupoSelecionado =
+        exercicio['grupoMuscular'] ?? gruposMusculares.first;
+
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -363,9 +425,14 @@ class _TreinosPageState extends State<TreinosPage> {
                 controller: nomeController,
                 decoration: const InputDecoration(labelText: 'Nome'),
               ),
-              TextField(
-                controller: grupoController,
+              DropdownButtonFormField<String>(
+                value: grupoSelecionado,
                 decoration: const InputDecoration(labelText: 'Grupo muscular'),
+                items: gruposMusculares
+                    .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                    .toList(),
+                onChanged: (value) =>
+                    grupoSelecionado = value ?? grupoSelecionado,
               ),
               TextField(
                 controller: seriesController,
@@ -414,29 +481,24 @@ class _TreinosPageState extends State<TreinosPage> {
     );
 
     if (confirmar == true) {
-      try {
-        await ExercicioService().editarExercicio({
-          'id': exercicio['id'],
-          'grupoId': exercicio['grupoId'],
-          'nome': nomeController.text.trim(),
-          'grupoMuscular': grupoController.text.trim(),
-          'series': int.tryParse(seriesController.text.trim()) ?? 0,
-          'repMin': int.tryParse(repMinController.text.trim()) ?? 0,
-          'repMax': int.tryParse(repMaxController.text.trim()) ?? 0,
-          'pesoInicial': double.tryParse(pesoController.text.trim()) ?? 0.0,
-          'observacao': obsController.text.trim(),
-          'ativo': true,
-        });
-
-        await _carregarGrupos();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Exercício editado com sucesso!')),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao editar exercício: $e')));
-      }
+      await ExercicioService().editarExercicio({
+        'id': exercicio['id'],
+        'grupoId': exercicio['grupoId'],
+        'nome': nomeController.text.trim(),
+        'grupoMuscular': grupoSelecionado,
+        'series': int.tryParse(seriesController.text.trim()) ?? 0,
+        'repMin': int.tryParse(repMinController.text.trim()) ?? 0,
+        'repMax': int.tryParse(repMaxController.text.trim()) ?? 0,
+        'pesoInicial': double.tryParse(pesoController.text.trim()) ?? 0.0,
+        'observacao': obsController.text.trim(),
+        'ativo': true,
+      });
+      await _carregarGrupos();
+      showCustomSnackBar(
+        context,
+        'Exercício editado com sucesso!',
+        backgroundColor: Colors.green,
+      );
     }
   }
 
@@ -492,7 +554,6 @@ class _TreinosPageState extends State<TreinosPage> {
             }
           });
         },
-
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -525,7 +586,6 @@ class _TreinosPageState extends State<TreinosPage> {
             ),
           ],
         ),
-
         subtitle: Row(
           children: [
             Text('$count exercício${count == 1 ? '' : 's'}'),
@@ -538,98 +598,54 @@ class _TreinosPageState extends State<TreinosPage> {
         children: [
           if (exercicios.isEmpty)
             const Padding(
-              padding: EdgeInsets.all(12.0),
-              child: Column(
-                children: [
-                  Text('Nenhum exercício neste grupo'),
-                  SizedBox(height: 8),
-                ],
+              padding: EdgeInsets.all(16),
+              child: Text('Nenhum exercício neste grupo.'),
+            ),
+          for (var ex in exercicios)
+            ListTile(
+              title: Text(ex['nome'] ?? ''),
+              subtitle: Text(
+                '${ex['series']} séries x ${ex['repMin']}-${ex['repMax']} rep. | ${ex['pesoInicial']}kg',
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.menu, color: Colors.white),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (_) => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.edit),
+                          title: const Text('Editar'),
+                          onTap: () {
+                            Navigator.pop(context);
+                            _editarExercicio(ex);
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.delete, color: Colors.red),
+                          title: const Text(
+                            'Excluir',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            _confirmarExclusaoExercicio(ex);
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
-          ...exercicios.map<Widget>((ex) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.black54, width: 1),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            ex['nome'] ?? 'Exercício',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          PopupMenuButton<String>(
-                            icon: const Icon(
-                              Icons.more_vert,
-                              color: Colors.white,
-                            ),
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(
-                                value: 'editar',
-                                child: Text('Editar'),
-                              ),
-                              const PopupMenuItem(
-                                value: 'excluir',
-                                child: Text(
-                                  'Excluir',
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              ),
-                            ],
-                            onSelected: (value) {
-                              if (value == 'editar') _editarExercicio(ex);
-                              if (value == 'excluir') {
-                                _confirmarExclusaoExercicio(ex);
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${ex['grupoMuscular'] ?? '-'}   '
-                        'Séries: ${ex['series'] ?? '-'}   '
-                        'Repet: ${ex['repMin'] ?? '-'}-${ex['repMax'] ?? '-'}   '
-                        'Peso: ${ex['pesoInicial'] != null ? double.parse(ex['pesoInicial'].toString()).toStringAsFixed(1) : '-'} kg',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      if ((ex['observacao'] ?? '').toString().isNotEmpty)
-                        Text(
-                          'Obs: ${ex['observacao']}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.amber,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: TextButton.icon(
               onPressed: () => _adicionarExercicio(grupoId),
               icon: const Icon(Icons.add),
-              label: const Text('Adicionar exercício'),
+              label: const Text('Adicionar Exercício'),
             ),
           ),
         ],
@@ -639,18 +655,60 @@ class _TreinosPageState extends State<TreinosPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_carregando) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return Container(
-      color: Colors.transparent,
-      child: ListView.builder(
-        itemCount: _grupos.length,
-        itemBuilder: (context, index) {
-          final grupo = _grupos[index];
-          return _buildGrupoCard(grupo);
-        },
+    return WillPopScope(
+      onWillPop: () async => false,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.black54,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: TextButton.icon(
+                onPressed: _criarGrupo,
+                icon: const Icon(Icons.add, color: Colors.white),
+                label: const Text(
+                  'Criar Treino',
+                  style: TextStyle(color: Colors.white),
+                ),
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        body: Stack(
+          children: [
+            // Imagem de fundo
+            SizedBox.expand(
+              child: Image.asset(
+                'assets/images/Copilot_20251029_183912.png',
+                fit: BoxFit.cover,
+              ),
+            ),
+            // Conteúdo por cima da imagem
+            _carregando
+                ? const Center(child: CircularProgressIndicator())
+                : RefreshIndicator(
+                    onRefresh: _carregarGrupos,
+                    child: ListView.builder(
+                      itemCount: _grupos.length,
+                      itemBuilder: (context, index) {
+                        return _buildGrupoCard(_grupos[index]);
+                      },
+                    ),
+                  ),
+          ],
+        ),
       ),
     );
   }
