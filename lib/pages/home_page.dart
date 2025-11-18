@@ -255,7 +255,7 @@ class _HomePageState extends State<HomePage> {
 
   String _mensagemMotivadora() {
     final frases = [
-      'Acredite no processo 💪',
+      'Bora treinar e conquistar seus objetivos! 💪',
       'Cada treino é um passo à frente 🚀',
       'Foco, força e fé 🔥',
       'A disciplina vence o cansaço 🧠',
@@ -383,33 +383,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 const SizedBox(height: 10),
                 // 🔘 Botão de Criar Treino
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: ElevatedButton.icon(
-                    onPressed: _criarGrupo,
-                    icon: const Icon(
-                      Icons.add,
-                      size: 12,
-                    ), // reduzindo tamanho do ícone
-                    label: const Text(
-                      'Criar Treino',
-                      style: TextStyle(
-                        fontSize: 12,
-                      ), // reduzindo tamanho do texto
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ), // 50% menor
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                  ),
-                ),
+                
                 const SizedBox(height: 10),
                 Expanded(child: _pages[_selectedIndex]),
               ],
