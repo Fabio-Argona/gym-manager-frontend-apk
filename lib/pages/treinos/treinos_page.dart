@@ -59,76 +59,82 @@ class _TreinosPageState extends State<TreinosPage> {
   }
 
   Future<List<Map<String, dynamic>>> _carregarGruposComExercicios() async {
-  final grupos = await TreinoService().listarGrupos();
-  final exercicios = await ExercicioService().listarExercicios();
+    final grupos = await TreinoService().listarGrupos();
+    final exercicios = await ExercicioService().listarExercicios();
 
-  final Map<String, List<Map<String, dynamic>>> exerciciosPorGrupo = {};
-  for (var ex in exercicios) {
-    final grupoId = ex['grupoId'] ?? ex['grupo_id'];
-    if (grupoId != null) {
-      exerciciosPorGrupo.putIfAbsent(grupoId, () => []).add(ex);
-    }
-  }
-
-  for (var grupo in grupos) {
-    final id = grupo['id'];
-    var listaExercicios = (exerciciosPorGrupo[id] ?? [])
-        .where((ex) => ex['ativo'] == true)
-        .toList();
-
-    listaExercicios.sort((a, b) {
-      final ga = a['grupoMuscular']?.toString() ?? '';
-      final gb = b['grupoMuscular']?.toString() ?? '';
-      return ga.compareTo(gb);
-    });
-
-    for (var ex in listaExercicios) {
-      ex.remove('grupoMuscular');
+    final Map<String, List<Map<String, dynamic>>> exerciciosPorGrupo = {};
+    for (var ex in exercicios) {
+      final grupoId = ex['grupoId'] ?? ex['grupo_id'];
+      if (grupoId != null) {
+        exerciciosPorGrupo.putIfAbsent(grupoId, () => []).add(ex);
+      }
     }
 
-    grupo['exercicios'] = listaExercicios;
+    for (var grupo in grupos) {
+      final id = grupo['id'];
+      var listaExercicios = (exerciciosPorGrupo[id] ?? [])
+          .where((ex) => ex['ativo'] == true)
+          .toList();
+
+      listaExercicios.sort((a, b) {
+        final ga = a['grupoMuscular']?.toString() ?? '';
+        final gb = b['grupoMuscular']?.toString() ?? '';
+        return ga.compareTo(gb);
+      });
+
+      for (var ex in listaExercicios) {
+        ex.remove('grupoMuscular');
+      }
+
+      grupo['exercicios'] = listaExercicios;
+    }
+
+    return grupos;
   }
-
-  return grupos;
-}
-
 
   Future<void> _criarGrupo() async {
-    final nome = await _mostrarDialogoGrupo();
-    if (nome != null && nome.isNotEmpty) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator()),
-      );
+  final nome = await _mostrarDialogoGrupo();
+  if (nome != null && nome.isNotEmpty) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
 
-      try {
-        final novoGrupo = await TreinoService().criarGrupo(nome);
+    try {
+      final novoGrupo = await TreinoService().criarGrupo(nome);
 
-        if (mounted) {
-          Navigator.pop(context); // fecha o loading
+      if (mounted) {
+        Navigator.pop(context); // fecha o loading
 
-          // Atualiza a HomePage inteira
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => HomePage(nome: widget.nome)),
-          );
+        // ✅ Atualiza lista local imediatamente
+        setState(() {
+          _grupos.add({
+            'id': novoGrupo['id'],
+            'nome': novoGrupo['nome'],
+            'exercicios': [],
+          });
+        });
 
-          // Mostra confirmação
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Grupo criado com sucesso!')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Erro ao criar grupo: $e')));
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Grupo "${novoGrupo['nome']}" criado com sucesso!'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao criar grupo: $e')),
+        );
       }
     }
   }
+}
+
 
   Future<void> _editarGrupo(String id, String nomeAtual) async {
     final novoNome = await _mostrarDialogoGrupo(nomeAtual);
@@ -141,7 +147,7 @@ class _TreinosPageState extends State<TreinosPage> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Exercício criado com sucesso!'),
+            content: const Text('Grupo editado com sucesso!'),
             backgroundColor: Colors.greenAccent.shade100,
             behavior: SnackBarBehavior.floating,
           ),
@@ -150,7 +156,7 @@ class _TreinosPageState extends State<TreinosPage> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Erro ao criar exercício'),
+            content: const Text('Erro ao editar grupo'),
             backgroundColor: Colors.redAccent.shade100,
             behavior: SnackBarBehavior.floating,
           ),
@@ -164,7 +170,9 @@ class _TreinosPageState extends State<TreinosPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Excluir grupo'),
-        content: Text('Tem certeza que deseja excluir "$nomeGrupo"?'),
+        content: Text(
+          'Tem certeza que deseja excluir "$nomeGrupo"? Todos os exercícios serão removidos.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -180,19 +188,22 @@ class _TreinosPageState extends State<TreinosPage> {
 
     if (confirmar == true) {
       try {
-        await TreinoService().excluirGrupo(id);
-
+        await TreinoService().excluirGrupoComExercicios(id);
         await _carregarGrupos();
 
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Grupo excluído com sucesso')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Grupo e exercícios excluídos com sucesso'),
+            ),
+          );
+        }
       } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao excluir grupo: $e')));
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Erro ao excluir grupo: $e')));
+        }
       }
     }
   }
@@ -219,10 +230,21 @@ class _TreinosPageState extends State<TreinosPage> {
     );
 
     if (confirmar == true) {
-      ExercicioService().desativarExercicio(
-        context,
-        exercicio,
-        _carregarGrupos,
+      await ExercicioService().editarExercicio({
+        'id': exercicio['id'],
+        'grupoId': exercicio['grupoId'],
+        'nome': exercicio['nome'],
+        'grupoMuscular': exercicio['grupoMuscular'],
+        'series': exercicio['series'],
+        'repMin': exercicio['repMin'],
+        'repMax': exercicio['repMax'],
+        'pesoInicial': exercicio['pesoInicial'],
+        'observacao': exercicio['observacao'],
+        'ativo': false,
+      });
+      await _carregarGrupos();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Exercício excluído com sucesso!')),
       );
     }
   }
@@ -346,9 +368,6 @@ class _TreinosPageState extends State<TreinosPage> {
 
   Future<void> _editarExercicio(Map<String, dynamic> exercicio) async {
     final nomeController = TextEditingController(text: exercicio['nome'] ?? '');
-    final grupoController = TextEditingController(
-      text: exercicio['grupoMuscular'] ?? '',
-    );
     final seriesController = TextEditingController(
       text: exercicio['series']?.toString() ?? '',
     );
@@ -365,6 +384,19 @@ class _TreinosPageState extends State<TreinosPage> {
       text: exercicio['observacao'] ?? '',
     );
 
+    final gruposMusculares = [
+      'Peito',
+      'Costas',
+      'Pernas',
+      'Ombros',
+      'Bíceps',
+      'Tríceps',
+      'Abdômen',
+      'Glúteos',
+    ];
+    String grupoSelecionado =
+        exercicio['grupoMuscular'] ?? gruposMusculares.first;
+
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -376,9 +408,14 @@ class _TreinosPageState extends State<TreinosPage> {
                 controller: nomeController,
                 decoration: const InputDecoration(labelText: 'Nome'),
               ),
-              TextField(
-                controller: grupoController,
+              DropdownButtonFormField<String>(
+                value: grupoSelecionado,
                 decoration: const InputDecoration(labelText: 'Grupo muscular'),
+                items: gruposMusculares
+                    .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                    .toList(),
+                onChanged: (value) =>
+                    grupoSelecionado = value ?? grupoSelecionado,
               ),
               TextField(
                 controller: seriesController,
@@ -427,29 +464,22 @@ class _TreinosPageState extends State<TreinosPage> {
     );
 
     if (confirmar == true) {
-      try {
-        await ExercicioService().editarExercicio({
-          'id': exercicio['id'],
-          'grupoId': exercicio['grupoId'],
-          'nome': nomeController.text.trim(),
-          'grupoMuscular': grupoController.text.trim(),
-          'series': int.tryParse(seriesController.text.trim()) ?? 0,
-          'repMin': int.tryParse(repMinController.text.trim()) ?? 0,
-          'repMax': int.tryParse(repMaxController.text.trim()) ?? 0,
-          'pesoInicial': double.tryParse(pesoController.text.trim()) ?? 0.0,
-          'observacao': obsController.text.trim(),
-          'ativo': true,
-        });
-
-        await _carregarGrupos();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Exercício editado com sucesso!')),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao editar exercício: $e')));
-      }
+      await ExercicioService().editarExercicio({
+        'id': exercicio['id'],
+        'grupoId': exercicio['grupoId'],
+        'nome': nomeController.text.trim(),
+        'grupoMuscular': grupoSelecionado,
+        'series': int.tryParse(seriesController.text.trim()) ?? 0,
+        'repMin': int.tryParse(repMinController.text.trim()) ?? 0,
+        'repMax': int.tryParse(repMaxController.text.trim()) ?? 0,
+        'pesoInicial': double.tryParse(pesoController.text.trim()) ?? 0.0,
+        'observacao': obsController.text.trim(),
+        'ativo': true,
+      });
+      await _carregarGrupos();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Exercício editado com sucesso!')),
+      );
     }
   }
 
