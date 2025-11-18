@@ -530,128 +530,147 @@ class _TreinosPageState extends State<TreinosPage> {
     );
   }
 
-  Widget _buildGrupoCard(Map<String, dynamic> grupo) {
-    final grupoId = grupo['id'];
-    final exercicios = (grupo['exercicios'] as List)
-        .where((ex) => ex['ativo'] == true)
-        .toList();
-    final count = exercicios.length;
-    final tempoTotal = count * 5;
+Widget _buildGrupoCard(Map<String, dynamic> grupo) {
+  final grupoId = grupo['id'];
+  final exercicios = (grupo['exercicios'] as List)
+      .where((ex) => ex['ativo'] == true)
+      .toList();
+  final count = exercicios.length;
+  final tempoTotal = count * 5;
 
-    return Card(
-      elevation: 4,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ExpansionTile(
-        key: PageStorageKey(grupoId),
-        initiallyExpanded: _gruposExpandidos.contains(grupoId),
-        onExpansionChanged: (expanded) {
-          setState(() {
-            if (expanded) {
-              _gruposExpandidos.add(grupoId);
-            } else {
-              _gruposExpandidos.remove(grupoId);
-            }
-          });
-        },
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                grupo['nome'] ?? 'Grupo sem nome',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.redAccent),
-              itemBuilder: (context) => [
-                const PopupMenuItem(value: 'editar', child: Text('Editar')),
-                const PopupMenuItem(
-                  value: 'desativar',
-                  child: Text(
-                    'Desativar',
-                    style: TextStyle(color: Colors.redAccent),
-                  ),
-                ),
-              ],
-              onSelected: (value) {
-                if (value == 'editar') {
-                  _editarGrupo(grupoId, grupo['nome']);
-                } else if (value == 'desativar') {
-                  _excluirGrupo(grupoId, grupo['nome']);
-                }
-              },
-            ),
-          ],
-        ),
-        subtitle: Row(
-          children: [
-            Text('$count exercício${count == 1 ? '' : 's'}'),
-            const SizedBox(width: 12),
-            const Icon(Icons.access_time, size: 16, color: Colors.amber),
-            const SizedBox(width: 4),
-            Text('$tempoTotal min'),
-          ],
-        ),
+  return Card(
+    elevation: 4,
+    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    child: ExpansionTile(
+      key: PageStorageKey(grupoId),
+      initiallyExpanded: _gruposExpandidos.contains(grupoId),
+      onExpansionChanged: (expanded) {
+        setState(() {
+          if (expanded) {
+            _gruposExpandidos.add(grupoId);
+          } else {
+            _gruposExpandidos.remove(grupoId);
+          }
+        });
+      },
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          if (exercicios.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Nenhum exercício neste grupo.'),
+          Expanded(
+            child: Text(
+              grupo['nome'] ?? 'Grupo sem nome',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
             ),
-          for (var ex in exercicios)
-            ListTile(
-              title: Text(ex['nome'] ?? ''),
-              subtitle: Text(
-                '${ex['series']} séries x ${ex['repMin']}-${ex['repMax']} rep. | ${ex['pesoInicial']}kg',
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.redAccent),
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'editar', child: Text('Editar')),
+              const PopupMenuItem(
+                value: 'desativar',
+                child: Text(
+                  'Desativar',
+                  style: TextStyle(color: Colors.redAccent),
+                ),
               ),
-              trailing: IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (_) => Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ListTile(
-                          leading: const Icon(Icons.edit),
-                          title: const Text('Editar'),
-                          onTap: () {
-                            Navigator.pop(context);
-                            _editarExercicio(ex);
-                          },
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.delete, color: Colors.red),
-                          title: const Text(
-                            'Excluir',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                          onTap: () {
-                            Navigator.pop(context);
-                            _confirmarExclusaoExercicio(ex);
-                          },
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: TextButton.icon(
-              onPressed: () => _adicionarExercicio(grupoId),
-              icon: const Icon(Icons.add),
-              label: const Text('Adicionar Exercício'),
-            ),
+            ],
+            onSelected: (value) {
+              if (value == 'editar') {
+                _editarGrupo(grupoId, grupo['nome']);
+              } else if (value == 'desativar') {
+                _excluirGrupo(grupoId, grupo['nome']);
+              }
+            },
           ),
         ],
       ),
-    );
-  }
+      subtitle: Row(
+        children: [
+          Text('$count exercício${count == 1 ? '' : 's'}'),
+          const SizedBox(width: 12),
+          const Icon(Icons.access_time, size: 16, color: Colors.amber),
+          const SizedBox(width: 4),
+          Text('$tempoTotal min'),
+        ],
+      ),
+      children: [
+        // Divider para separar título dos exercícios
+        const Divider(
+          thickness: 1,
+          height: 1,
+          color: Colors.grey,
+        ),
+        if (exercicios.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text('Nenhum exercício neste grupo.'),
+          ),
+        for (var ex in exercicios)
+  ListTile(
+    title: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Text(
+            ex['nome'] ?? '',
+            style: const TextStyle(fontWeight: FontWeight.normal, color: Colors.greenAccent),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        Text(
+          '${ex['series']} x ${ex['repMin']} - ${ex['pesoInicial']}kg',
+          style: const TextStyle(color: Colors.grey),
+        ),
+      ],
+    ),
+    trailing: IconButton(
+      icon: const Icon(Icons.more_vert, color: Colors.redAccent),
+      onPressed: () {
+        showModalBottomSheet(
+          context: context,
+          builder: (_) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('Editar'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _editarExercicio(ex);
+                },
+              ),
+              ListTile(
+               
+                title: const Text(
+                  'Excluir',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmarExclusaoExercicio(ex);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  ),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: TextButton.icon(
+            onPressed: () => _adicionarExercicio(grupoId),
+            icon: const Icon(Icons.add),
+            label: const Text('Adicionar Exercício'),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
