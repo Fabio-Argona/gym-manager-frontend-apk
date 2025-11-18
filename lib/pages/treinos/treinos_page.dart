@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_treinoabc/pages/home_page.dart';
 import 'package:flutter_application_treinoabc/services/treino_service.dart';
 import 'package:flutter_application_treinoabc/services/exercicio_service.dart';
 
@@ -596,50 +595,99 @@ class _TreinosPageState extends State<TreinosPage> {
           ],
         ),
         children: [
+          // Divider para separar título dos exercícios
+          const Divider(thickness: 1, height: 1, color: Colors.grey),
           if (exercicios.isEmpty)
             const Padding(
               padding: EdgeInsets.all(16),
               child: Text('Nenhum exercício neste grupo.'),
             ),
           for (var ex in exercicios)
-            ListTile(
-              title: Text(ex['nome'] ?? ''),
-              subtitle: Text(
-                '${ex['series']} séries x ${ex['repMin']}-${ex['repMax']} rep. | ${ex['pesoInicial']}kg',
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (_) => Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ListTile(
-                          leading: const Icon(Icons.edit),
-                          title: const Text('Editar'),
-                          onTap: () {
-                            Navigator.pop(context);
-                            _editarExercicio(ex);
-                          },
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.delete, color: Colors.red),
-                          title: const Text(
-                            'Excluir',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                          onTap: () {
-                            Navigator.pop(context);
-                            _confirmarExclusaoExercicio(ex);
-                          },
-                        ),
-                      ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  // Nome do exercício
+                  Expanded(
+                    child: Text(
+                      ex['nome'] ?? '',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Color.fromARGB(255, 93, 167, 209),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  );
-                },
+                  ),
+                  // Séries, repetições e carga com tonalidades diferentes
+                  Row(
+                    children: [
+                      Text(
+                        '${ex['series']}x',
+                        style: const TextStyle(
+                          color: Color(0xFF1976D2), // azul médio
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Text('|', style: TextStyle(color: Colors.grey)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${ex['repMin']} rep.',
+                        style: const TextStyle(
+                          color: Color(0xFF42A5F5), 
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Text('|', style: TextStyle(color: Colors.grey)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${ex['pesoInicial']}kg',
+                        style: const TextStyle(
+                          color: Color(0xFF90CAF9), 
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Botão de mais opções
+                  IconButton(
+                    icon: const Icon(Icons.more_vert, color: Colors.redAccent),
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (_) => Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                            
+                              title: const Text('Editar'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                _editarExercicio(ex);
+                              },
+                            ),
+                            ListTile(
+                             
+                              title: const Text(
+                                'Excluir',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                              onTap: () {
+                                Navigator.pop(context);
+                                _confirmarExclusaoExercicio(ex);
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
+
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: TextButton.icon(
@@ -662,15 +710,22 @@ class _TreinosPageState extends State<TreinosPage> {
         appBar: AppBar(
           automaticallyImplyLeading: false,
           backgroundColor: Colors.black54,
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: TextButton.icon(
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Olá, ${widget.nome}',
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+              ),
+              TextButton.icon(
                 onPressed: _criarGrupo,
-                icon: const Icon(Icons.add, color: Colors.white),
+                icon: const Icon(
+                  Icons.add,
+                  color: Color.fromARGB(255, 189, 156, 245),
+                ),
                 label: const Text(
-                  'Criar Treino',
-                  style: TextStyle(color: Colors.white),
+                  'Treino',
+                  style: TextStyle(color: Color.fromARGB(255, 189, 156, 245)),
                 ),
                 style: TextButton.styleFrom(
                   backgroundColor: Colors.transparent,
@@ -683,9 +738,10 @@ class _TreinosPageState extends State<TreinosPage> {
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+
         body: Stack(
           children: [
             // Imagem de fundo

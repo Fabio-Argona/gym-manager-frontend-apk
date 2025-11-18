@@ -24,9 +24,6 @@ class _HomePageState extends State<HomePage> {
   String? imagemUrl;
   String? alunoId;
 
-  // Pega apenas o primeiro nome
-  String get primeiroNome => widget.nome.split(' ').first;
-
   @override
   void initState() {
     super.initState();
@@ -242,17 +239,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  String _saudacaoDoDia() {
-    final hora = DateTime.now().hour;
-    if (hora >= 5 && hora < 12) {
-      return 'Bom dia,';
-    } else if (hora >= 12 && hora < 18) {
-      return 'Boa tarde,';
-    } else {
-      return 'Boa noite,';
-    }
-  }
-
   String _mensagemMotivadora() {
     final frases = [
       'Bora treinar e conquistar seus objetivos! 💪',
@@ -273,27 +259,19 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor:
-            Colors.transparent, // deixa transparente para mostrar o fundo
-        elevation: 0, // remove sombra
+            Colors.transparent, 
+        elevation: 0, 
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
+            const Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
+              children: [           
+                SizedBox(width: 5),
                 Text(
-                  _saudacaoDoDia(),
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  primeiroNome,
-                  style: const TextStyle(
-                    color: Colors.amberAccent,
+                  "Treino",
+                  style: TextStyle(
+                    color: Colors.greenAccent,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
