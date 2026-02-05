@@ -218,30 +218,14 @@ class ExercicioService {
     }
   }
 
-  Future<void> atualizarStatus(String id, bool ativo) async {
-    final headers = await _getHeaders(includeAlunoId: true);
-
-    final uri = Uri.parse('$baseUrl/exercicios/$id/status');
-    final body = jsonEncode({'ativo': ativo});
-
-    print('PATCH $uri');
-    print('Headers: $headers');
-    print('Body: $body');
-
-    final response = await http.patch(uri, headers: headers, body: body);
-
-    if (response.statusCode == 200 || response.statusCode == 204) {
-      return;
-    }
-
-    String mensagemErro;
-    try {
-      final erro = jsonDecode(response.body);
-      mensagemErro = erro['message'] ?? 'Erro desconhecido';
-    } catch (_) {
-      mensagemErro = 'Erro ao atualizar status: ${response.statusCode}';
-    }
-
-    throw Exception(mensagemErro);
+  Future<bool> atualizarStatus(String id, String status) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/$id/status'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'status': status}),
+    );
+    return response.statusCode == 200;
   }
 }
+
+

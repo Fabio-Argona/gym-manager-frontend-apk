@@ -26,7 +26,7 @@ void desativarExercicio(
   VoidCallback onAtualizar,
 ) async {
   try {
-    await ExercicioService().atualizarStatus(id, false); // desativa
+    await ExercicioService().atualizarStatus(id, false as String); // desativa
     onAtualizar();
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
