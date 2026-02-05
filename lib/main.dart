@@ -51,7 +51,8 @@ class MyApp extends StatelessWidget {
           case '/recuperar':
             return _criarRotaAnimada(const RecuperarSenhaPage());
           case '/redefinir':
-            return _criarRotaAnimada(const RedefinirSenhaPage());
+            final token = settings.arguments as String? ?? '';
+            return _criarRotaAnimada(RedefinirSenhaPage(token: token));
           default:
             return _criarRotaAnimada(const LoginPage());
         }

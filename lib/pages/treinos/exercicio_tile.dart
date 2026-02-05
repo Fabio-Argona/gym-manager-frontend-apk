@@ -17,14 +17,13 @@ class ExercicioTile extends StatelessWidget {
     final String nomeExercicio = exercicio['nome'] ?? 'Exercício';
     final String grupoMuscular = exercicio['grupoMuscular'] ?? '';
     final int series = exercicio['series'] ?? 0;
-    final int repMin = exercicio['repMin'] ?? 0;
-    final int repMax = exercicio['repMax'] ?? 0;
+    final int repeticoes = exercicio['repeticoes'] ?? 0;
     final double pesoInicial = (exercicio['pesoInicial'] ?? 0).toDouble();
 
     return ListTile(
       title: Text(nomeExercicio, style: const TextStyle(color: Colors.white)),
       subtitle: Text(
-        '$grupoMuscular • ${series}x $repMin-$repMax • ${pesoInicial.toStringAsFixed(1)}kg',
+        '$grupoMuscular • ${series}x$repeticoes • ${pesoInicial.toStringAsFixed(1)}kg',
         style: const TextStyle(color: Colors.grey),
       ),
       trailing: PopupMenuButton<String>(
