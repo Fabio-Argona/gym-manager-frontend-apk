@@ -42,7 +42,7 @@ class _HomePageState extends State<HomePage> {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       setState(() {
         imagemUrl =
-            'http://18.222.56.92:8080/api/uploads/$alunoId.jpeg?t=$timestamp';
+            'http://localhost:8080/api/uploads/$alunoId.jpeg?t=$timestamp';
       });
     }
   }
@@ -59,7 +59,7 @@ class _HomePageState extends State<HomePage> {
 
     final fileBytes = result.files.first.bytes!;
     final fileName = '$alunoId.jpeg';
-    final uri = Uri.parse('http://18.222.56.92:8080/api/upload/$alunoId');
+    final uri = Uri.parse('http://localhost:8080/api/upload/$alunoId');
 
     final request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $token'
@@ -74,7 +74,7 @@ class _HomePageState extends State<HomePage> {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       setState(() {
         imagemUrl =
-            'http://18.222.56.92:8080/api/uploads/$alunoId.jpeg?t=$timestamp';
+            'http://localhost:8080/api/uploads/$alunoId.jpeg?t=$timestamp';
       });
     } else {
       print('Erro ao enviar imagem: ${response.statusCode}');
@@ -110,7 +110,7 @@ class _HomePageState extends State<HomePage> {
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 16),
+
               TextFormField(
                 controller: nomeGrupoController,
                 style: const TextStyle(color: Colors.white),
@@ -135,7 +135,7 @@ class _HomePageState extends State<HomePage> {
                       style: TextStyle(color: Colors.white70),
                     ),
                   ),
-                  const SizedBox(width: 12),
+
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.deepPurpleAccent,
@@ -220,23 +220,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _editarPerfil() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Editar Perfil'),
-        content: const Text('Aqui você pode editar seu nome, foto ou dados.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Salvar'),
-          ),
-        ],
-      ),
-    );
+    setState(() => _selectedIndex = 2); // Muda para a aba ProfilePage
   }
 
   String _mensagemMotivadora() {
@@ -258,21 +242,19 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor:
-            Colors.transparent, 
-        elevation: 0, 
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [           
-                SizedBox(width: 5),
+              children: [
                 Text(
-                  "Treino",
-                  style: TextStyle(
+                  widget.nome,
+                  style: const TextStyle(
                     color: Colors.greenAccent,
-                    fontSize: 18,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -308,10 +290,7 @@ class _HomePageState extends State<HomePage> {
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'editar',
-                  child: Text('Editar perfil'),
-                ),
+                const PopupMenuItem(value: 'editar', child: Text('Meu Perfil')),
                 const PopupMenuItem(
                   value: 'imagem',
                   child: Text('Trocar imagem'),
@@ -358,13 +337,7 @@ class _HomePageState extends State<HomePage> {
           SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 10),
-                // 🔘 Botão de Criar Treino
-                
-                const SizedBox(height: 10),
-                Expanded(child: _pages[_selectedIndex]),
-              ],
+              children: [Expanded(child: _pages[_selectedIndex])],
             ),
           ),
         ],

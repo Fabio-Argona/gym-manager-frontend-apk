@@ -6,7 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:http_parser/http_parser.dart';
 
 class TreinoService {
-  final String baseUrl = 'http://18.222.56.92:8080';
+  final String baseUrl = 'http://localhost:8080';
 
   // 🔍 Lista os grupos do aluno
   Future<List<Map<String, dynamic>>> listarGrupos() async {

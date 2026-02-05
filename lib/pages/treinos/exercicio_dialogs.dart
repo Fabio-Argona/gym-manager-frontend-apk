@@ -10,8 +10,7 @@ void mostrarCriarExercicio(
   final nomeController = TextEditingController();
   final grupoController = TextEditingController();
   final seriesController = TextEditingController();
-  final repMinController = TextEditingController();
-  final repMaxController = TextEditingController();
+  final repeticoesController = TextEditingController();
   final pesoController = TextEditingController();
   final obsController = TextEditingController();
 
@@ -29,8 +28,7 @@ void mostrarCriarExercicio(
             buildField('Nome', nomeController),
             buildField('Grupo Muscular', grupoController),
             buildField('Séries', seriesController, isNumber: true),
-            buildField('Repetições Mín', repMinController, isNumber: true),
-            buildField('Repetições Máx', repMaxController, isNumber: true),
+            buildField('Repetições', repeticoesController, isNumber: true),
             buildField('Peso (kg)', pesoController, isNumber: true),
             buildField('Observação', obsController),
           ],
@@ -51,8 +49,7 @@ void mostrarCriarExercicio(
               'nome': nomeController.text,
               'grupoMuscular': grupoController.text,
               'series': int.tryParse(seriesController.text) ?? 0,
-              'repMin': int.tryParse(repMinController.text) ?? 0,
-              'repMax': int.tryParse(repMaxController.text) ?? 0,
+              'repeticoes': int.tryParse(repeticoesController.text) ?? 0,
               'pesoInicial': double.tryParse(pesoController.text) ?? 0.0,
               'observacao': obsController.text,
             };
@@ -90,36 +87,52 @@ void mostrarCriarExercicio(
   );
 }
 
-
-void mostrarEditarExercicio(BuildContext context, Map<String, dynamic> exercicio, VoidCallback onAtualizar) {
+void mostrarEditarExercicio(
+  BuildContext context,
+  Map<String, dynamic> exercicio,
+  VoidCallback onAtualizar,
+) {
   final nomeController = TextEditingController(text: exercicio['nome'] ?? '');
-  final grupoController = TextEditingController(text: exercicio['grupoMuscular'] ?? '');
-  final seriesController = TextEditingController(text: exercicio['series']?.toString() ?? '');
-  final repMinController = TextEditingController(text: exercicio['repMin']?.toString() ?? '');
-  final repMaxController = TextEditingController(text: exercicio['repMax']?.toString() ?? '');
-  final pesoController = TextEditingController(text: exercicio['pesoInicial']?.toString() ?? '');
-  final obsController = TextEditingController(text: exercicio['observacao'] ?? '');
-  final String? id = exercicio['id'] ?? exercicio['exercicioId'];
-if (id == null || id.isEmpty) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Este exercício não pode ser editado. ID ausente.')),
+  final grupoController = TextEditingController(
+    text: exercicio['grupoMuscular'] ?? '',
   );
-  return;
-}
+  final seriesController = TextEditingController(
+    text: exercicio['series']?.toString() ?? '',
+  );
+  final repeticoesController = TextEditingController(
+    text: exercicio['repeticoes']?.toString() ?? '',
+  );
+  final pesoController = TextEditingController(
+    text: exercicio['pesoInicial']?.toString() ?? '',
+  );
+  final obsController = TextEditingController(
+    text: exercicio['observacao'] ?? '',
+  );
+  final String? id = exercicio['id'] ?? exercicio['exercicioId'];
+  if (id == null || id.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Este exercício não pode ser editado. ID ausente.'),
+      ),
+    );
+    return;
+  }
 
   showDialog(
     context: context,
     builder: (_) => AlertDialog(
       backgroundColor: Colors.black,
-      title: const Text('Editar Exercício', style: TextStyle(color: Colors.white)),
+      title: const Text(
+        'Editar Exercício',
+        style: TextStyle(color: Colors.white),
+      ),
       content: SingleChildScrollView(
         child: Column(
           children: [
             buildField('Nome', nomeController),
             buildField('Grupo Muscular', grupoController),
             buildField('Séries', seriesController, isNumber: true),
-            buildField('Repetições Mín', repMinController, isNumber: true),
-            buildField('Repetições Máx', repMaxController, isNumber: true),
+            buildField('Repetições', repeticoesController, isNumber: true),
             buildField('Peso (kg)', pesoController, isNumber: true),
             buildField('Observação', obsController),
           ],
@@ -131,15 +144,16 @@ if (id == null || id.isEmpty) {
           child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
         ),
         ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurpleAccent),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.deepPurpleAccent,
+          ),
           onPressed: () async {
             final dadosAtualizados = {
               'id': id,
               'nome': nomeController.text,
               'grupoMuscular': grupoController.text,
               'series': int.tryParse(seriesController.text) ?? 0,
-              'repMin': int.tryParse(repMinController.text) ?? 0,
-              'repMax': int.tryParse(repMaxController.text) ?? 0,
+              'repeticoes': int.tryParse(repeticoesController.text) ?? 0,
               'pesoInicial': double.tryParse(pesoController.text) ?? 0.0,
               'observacao': obsController.text,
             };

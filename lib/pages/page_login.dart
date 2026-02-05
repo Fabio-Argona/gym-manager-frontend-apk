@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../services/auth_service.dart';
+import 'recuperar_senha_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -169,11 +170,11 @@ class _LoginPageState extends State<LoginPage> {
                         alignment: Alignment.centerRight,
                         child: TextButton(
                           onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  "Funcionalidade de recuperação em construção",
-                                ),
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const RecuperarSenhaPage(),
                               ),
                             );
                           },
@@ -187,6 +188,67 @@ class _LoginPageState extends State<LoginPage> {
                       ),
 
                     const SizedBox(height: 24),
+                    if (isLogin) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.deepPurple,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                textStyle: const TextStyle(fontSize: 14),
+                              ),
+                              onPressed: () async {
+                                setState(() => isLoading = true);
+                                try {
+                                  final success = await authService
+                                      .authenticateWithBiometrics();
+                                  if (success) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Autenticação biométrica realizada!',
+                                        ),
+                                      ),
+                                    );
+                                    await Future.delayed(
+                                      const Duration(seconds: 1),
+                                    );
+                                    final nomeSalvo = await authService
+                                        .getNomeSalvo();
+                                    Navigator.pushReplacementNamed(
+                                      context,
+                                      '/home',
+                                      arguments: nomeSalvo ?? 'Usuário',
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Falha na autenticação biométrica',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(e.toString())),
+                                  );
+                                } finally {
+                                  setState(() => isLoading = false);
+                                }
+                              },
+                              icon: const Icon(Icons.fingerprint),
+                              label: const Text('Impressão Digital'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     isLoading
                         ? const Center(
                             child: CircularProgressIndicator(
