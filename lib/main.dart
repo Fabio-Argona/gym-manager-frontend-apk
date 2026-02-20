@@ -47,7 +47,6 @@ class MyApp extends StatelessWidget {
           case '/home':
             final nome = settings.arguments as String? ?? 'Usuário';
             return _criarRotaAnimada(HomePage(nome: nome));
-
           case '/recuperar':
             return _criarRotaAnimada(const RecuperarSenhaPage());
           case '/redefinir':

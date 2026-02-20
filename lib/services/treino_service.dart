@@ -3,11 +3,11 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
+// ignore: depend_on_referenced_packages
 import 'package:http_parser/http_parser.dart';
+import '../constants/constants.dart';
 
 class TreinoService {
-  final String baseUrl = 'http://localhost:8080';
-
   // 🔍 Lista os grupos do aluno
   Future<List<Map<String, dynamic>>> listarGrupos() async {
     final prefs = await SharedPreferences.getInstance();
@@ -19,7 +19,7 @@ class TreinoService {
     }
 
     final response = await http.get(
-      Uri.parse('$baseUrl/grupos/aluno/$alunoId'),
+      Uri.parse('$endpointGrupos/aluno/$alunoId'),
       headers: {'Authorization': 'Bearer $token'},
     );
 
@@ -31,30 +31,30 @@ class TreinoService {
     }
   }
 
- Future<Map<String, dynamic>> criarGrupo(String nome) async {
-  final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString('token') ?? '';
-  final alunoId = prefs.getString('alunoId') ?? '';
+  Future<Map<String, dynamic>> criarGrupo(String nome) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+    final alunoId = prefs.getString('alunoId') ?? '';
 
-  if (token.isEmpty || alunoId.isEmpty) {
-    throw Exception('Credenciais inválidas');
+    if (token.isEmpty || alunoId.isEmpty) {
+      throw Exception('Credenciais inválidas');
+    }
+
+    final response = await http.post(
+      Uri.parse(endpointGrupos),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'nome': nome, 'alunoId': alunoId}),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('Erro ao criar grupo: ${response.body}');
+    }
+
+    return jsonDecode(response.body);
   }
-
-  final response = await http.post(
-    Uri.parse('$baseUrl/grupos'),
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    },
-    body: jsonEncode({'nome': nome, 'alunoId': alunoId}),
-  );
-
-  if (response.statusCode != 201) {
-    throw Exception('Erro ao criar grupo: ${response.body}');
-  }
-
-  return jsonDecode(response.body);
-}
 
   // ✏️ Edita o nome de um grupo
   Future<void> editarGrupo(String grupoId, String novoNome) async {
@@ -66,7 +66,7 @@ class TreinoService {
     }
 
     final response = await http.patch(
-      Uri.parse('$baseUrl/grupos/$grupoId'),
+      Uri.parse('$endpointGrupos/$grupoId'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ class TreinoService {
     }
   }
 
-    // ❌ Exclui um grupo junto com seus exercícios vinculados
+  // ❌ Exclui um grupo junto com seus exercícios vinculados
   Future<void> excluirGrupoComExercicios(String grupoId) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token') ?? '';
@@ -89,7 +89,7 @@ class TreinoService {
     }
 
     final response = await http.delete(
-      Uri.parse('$baseUrl/grupos/$grupoId/com-exercicios'),
+      Uri.parse('$endpointGrupos/$grupoId/com-exercicios'),
       headers: {'Authorization': 'Bearer $token'},
     );
 
@@ -97,7 +97,6 @@ class TreinoService {
       throw Exception('Erro ao excluir grupo e exercícios: ${response.body}');
     }
   }
-
 
   // 📤 Upload de imagem do aluno (Flutter Web)
   Future<String> uploadImagemWeb() async {
@@ -110,7 +109,9 @@ class TreinoService {
     }
 
     final result = await FilePicker.platform.pickFiles(type: FileType.image);
-    if (result == null || result.files.isEmpty || result.files.first.bytes == null) {
+    if (result == null ||
+        result.files.isEmpty ||
+        result.files.first.bytes == null) {
       throw Exception('Nenhuma imagem válida selecionada');
     }
 
@@ -121,14 +122,15 @@ class TreinoService {
     MediaType contentType;
     if (originalName.endsWith('.png')) {
       contentType = MediaType('image', 'png');
-    } else if (originalName.endsWith('.jpg') || originalName.endsWith('.jpeg')) {
+    } else if (originalName.endsWith('.jpg') ||
+        originalName.endsWith('.jpeg')) {
       contentType = MediaType('image', 'jpeg');
     } else {
       contentType = MediaType('application', 'octet-stream');
     }
 
     final fileName = '$alunoId.jpeg';
-    final uri = Uri.parse('$baseUrl/api/upload/$alunoId');
+    final uri = Uri.parse('$endpointUpload/$alunoId');
 
     final request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $token'
@@ -161,7 +163,7 @@ class TreinoService {
       throw Exception('Credenciais inválidas');
     }
 
-    final uri = Uri.parse('$baseUrl/api/uploads/$alunoId.jpeg');
+    final uri = Uri.parse('$endpointUploads/$alunoId.jpeg');
     final response = await http.get(
       uri,
       headers: {'Authorization': 'Bearer $token'},
@@ -179,7 +181,7 @@ class TreinoService {
     final prefs = await SharedPreferences.getInstance();
     final alunoId = prefs.getString('alunoId') ?? '';
     if (alunoId.isEmpty) throw Exception('ID do aluno não encontrado');
-    return '$baseUrl/api/uploads/$alunoId.jpeg';
+    return '$endpointUploads/$alunoId.jpeg';
   }
 
   // ✅ Verifica se a imagem existe
@@ -188,7 +190,7 @@ class TreinoService {
     final alunoId = prefs.getString('alunoId') ?? '';
     if (alunoId.isEmpty) return false;
 
-    final uri = Uri.parse('$baseUrl/api/uploads/$alunoId.jpeg');
+    final uri = Uri.parse('$endpointUploads/$alunoId.jpeg');
     final response = await http.head(uri);
     return response.statusCode == 200;
   }

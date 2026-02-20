@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_treinoabc/services/treino_service.dart';
 import 'package:flutter_application_treinoabc/services/exercicio_service.dart';
 import 'package:flutter_application_treinoabc/services/exercicio_realizado_service.dart';
@@ -31,10 +34,45 @@ class _TreinosPageState extends State<TreinosPage> {
   bool _carregando = true;
   final Map<String, bool> _exerciciosEmExecucao = {};
 
+  final Map<String, int> _tempoExercicio = {};
+  final Map<String, Timer?> _cronometros = {};
+
+  final Map<String, DateTime> _ultimaConclusao = {};
+
   @override
   void initState() {
     super.initState();
+    _carregarConclusoes();
     _carregarGrupos();
+  }
+
+  /// Carrega do disco as datas de conclusão salvas anteriormente
+  Future<void> _carregarConclusoes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final keys = prefs.getKeys().where((k) => k.startsWith('conclusao_'));
+    final Map<String, DateTime> carregados = {};
+    for (final key in keys) {
+      final valor = prefs.getString(key);
+      if (valor != null) {
+        final dt = DateTime.tryParse(valor);
+        if (dt != null) {
+          final id = key.replaceFirst('conclusao_', '');
+          carregados[id] = dt;
+        }
+      }
+    }
+    if (mounted) {
+      setState(() => _ultimaConclusao.addAll(carregados));
+    }
+  }
+
+  /// Persiste a data de conclusão de um exercício no disco
+  Future<void> _salvarConclusao(String exercicioId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'conclusao_$exercicioId',
+      DateTime.now().toIso8601String(),
+    );
   }
 
   // Função utilitária para SnackBar
@@ -55,42 +93,53 @@ class _TreinosPageState extends State<TreinosPage> {
   }
 
   Future<void> _carregarGrupos() async {
-    setState(() => _carregando = true);
+  if (!mounted) return;
+  setState(() => _carregando = true);
 
-    try {
-      final grupos = await _carregarGruposComExercicios();
+  try {
+    final grupos = await _carregarGruposComExercicios();
 
-      const ordemGrupos = [
-        'Peito',
-        'Costas',
-        'Tríceps',
-        'Bíceps',
-        'Ombro',
-        'Perna',
-        'Abdômen',
-        'Panturrilha',
-      ];
-      grupos.sort((a, b) {
-        final ia = ordemGrupos.indexOf(a['nome']);
-        final ib = ordemGrupos.indexOf(b['nome']);
-        return (ia == -1 ? 999 : ia).compareTo(ib == -1 ? 999 : ib);
-      });
+    const ordemGrupos = [
+      'Peito','Costas','Tríceps','Bíceps','Ombro','Perna','Abdômen','Panturrilha',
+    ];
+    grupos.sort((a, b) {
+      final ia = ordemGrupos.indexOf(a['nome']);
+      final ib = ordemGrupos.indexOf(b['nome']);
+      return (ia == -1 ? 999 : ia).compareTo(ib == -1 ? 999 : ib);
+    });
 
-      if (!mounted) return;
-      setState(() {
-        _grupos = grupos;
-        _carregando = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _carregando = false);
-      showCustomSnackBar(
-        context,
-        'Erro ao carregar grupos: $e',
-        backgroundColor: Colors.redAccent.shade100,
-      );
-    }
+    if (!mounted) return;
+    setState(() {
+      _grupos = grupos;
+      _carregando = false;
+    });
+  } catch (e) {
+    if (!mounted) return;
+    setState(() => _carregando = false);
+    showCustomSnackBar(
+      context,
+      'Erro ao carregar grupos: $e',
+      backgroundColor: Colors.redAccent.shade100,
+    );
   }
+}
+
+  @override
+void dispose() {
+  // Cancela todos os cronômetros ativos
+  for (var timer in _cronometros.values) {
+    timer?.cancel();
+  }
+
+  // Limpa os mapas para evitar referências antigas
+  _cronometros.clear();
+  _tempoExercicio.clear();
+  _exerciciosEmExecucao.clear();
+  _ultimaConclusao.clear();
+
+  super.dispose();
+}
+
 
   Future<List<Map<String, dynamic>>> _carregarGruposComExercicios() async {
     final grupos = await TreinoService().listarGrupos();
@@ -370,8 +419,7 @@ class _TreinosPageState extends State<TreinosPage> {
         'series': int.tryParse(seriesController.text) ?? 0,
         'repeticoes': int.tryParse(repeticoesController.text) ?? 0,
         'pesoInicial': double.tryParse(pesoController.text) ?? 0.0,
-        'observacao':
-            '${_getDiaSemana(DateTime.now())}${obsController.text.trim().isNotEmpty ? ' - ${obsController.text.trim()}' : ''}',
+        'observacao': obsController.text.trim(),
         'grupoId': grupoId,
       });
 
@@ -523,268 +571,334 @@ class _TreinosPageState extends State<TreinosPage> {
 
   // INICIAR TREINO
   Future<void> _iniciarTreino(String grupoId, String grupoNome) async {
-    final hoje = DateTime.now();
-    final dataFormatada =
-        '${hoje.year}-${hoje.month.toString().padLeft(2, '0')}-${hoje.day.toString().padLeft(2, '0')}';
+  final hoje = DateTime.now();
+  final dataFormatada =
+      '${hoje.year}-${hoje.month.toString().padLeft(2, '0')}-${hoje.day.toString().padLeft(2, '0')}';
 
-    final treinoId = await ExercicioRealizadoService().iniciarTreino(
-      grupoId,
-      dataFormatada,
-    );
+  final treinoId = await ExercicioRealizadoService().iniciarTreino(grupoId, dataFormatada);
 
-    if (treinoId != null) {
-      showCustomSnackBar(
-        context,
-        'Treino de "$grupoNome" iniciado!',
-        backgroundColor: Colors.green,
-      );
-      // opcional: guardar treinoId em um map para usar nos registros
-      setState(() {
-        for (var ex in _grupos.firstWhere(
-          (g) => g['id'] == grupoId,
-        )['exercicios']) {
-          _exerciciosEmExecucao[ex['id']] = false;
-        }
-      });
-    } else {
-      showCustomSnackBar(
-        context,
-        'Erro ao iniciar treino',
-        backgroundColor: Colors.redAccent.shade100,
-      );
-    }
-  }
-
-  // EXIBIR DIALOG COM EXERCÍCIOS DO GRUPO
-  void _exibirDialogoExercicios(
-    String grupoId,
-    String grupoNome,
-    String treinoId,
-    String dataFormatada,
-  ) {
-    final grupo = _grupos.firstWhere((g) => g['id'] == grupoId);
-    final exercicios = (grupo['exercicios'] as List)
-        .where((ex) => ex['ativo'] == true)
-        .toList();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Treino: $grupoNome'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            itemCount: exercicios.length,
-            itemBuilder: (context, index) {
-              final ex = exercicios[index];
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                color: Colors.grey[900],
-                child: ListTile(
-                  title: Text(
-                    ex['nome'] ?? '',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  subtitle: Text(
-                    '${ex['series']}x${ex['repeticoes']} - ${(ex['pesoInicial'] ?? 0.0).toStringAsFixed(1)}kg',
-                    style: TextStyle(color: Colors.grey[400]),
-                  ),
-                  trailing: (_exerciciosEmExecucao[ex['id']] == true)
-                      ? ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          onPressed: () async {
-                            // Ao concluir, salva o registro
-                            await _salvarRegistroExercicio(
-                              ex,
-                              treinoId,
-                              dataFormatada,
-                              TextEditingController(
-                                text: ex['series'].toString(),
-                              ),
-                              TextEditingController(
-                                text: ex['repeticoes'].toString(),
-                              ),
-                              TextEditingController(
-                                text: ex['pesoInicial'].toString(),
-                              ),
-                              TextEditingController(),
-                            );
-                            setState(() {
-                              _exerciciosEmExecucao[ex['id']] = false;
-                            });
-                          },
-                          child: const Text(
-                            'Concluído',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        )
-                      : ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.amber,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _exerciciosEmExecucao[ex['id']] = true;
-                            });
-                          },
-                          child: const Text(
-                            'Iniciar',
-                            style: TextStyle(color: Colors.black),
-                          ),
-                        ),
-                ),
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Fechar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // DIALOG PARA REGISTRAR EXERCÍCIO
-  void _exibirDialogoRegistroExercicio(
-    Map<String, dynamic> exercicio,
-    String treinoId,
-    String dataFormatada,
-  ) {
-    final seriesController = TextEditingController(
-      text: exercicio['series']?.toString() ?? '3',
-    );
-    final repeticoesController = TextEditingController(
-      text: exercicio['repeticoes']?.toString() ?? '10',
-    );
-    final pesoController = TextEditingController(
-      text: exercicio['pesoInicial']?.toString() ?? '0',
-    );
-    final obsController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Registrar: ${exercicio['nome']}'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: seriesController,
-                decoration: const InputDecoration(
-                  labelText: 'Séries realizadas',
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: repeticoesController,
-                decoration: const InputDecoration(
-                  labelText: 'Repetições realizadas',
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: pesoController,
-                decoration: const InputDecoration(
-                  labelText: 'Peso utilizado (kg)',
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: obsController,
-                decoration: const InputDecoration(labelText: 'Observações'),
-                maxLines: 2,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _salvarRegistroExercicio(
-                exercicio,
-                treinoId,
-                dataFormatada,
-                seriesController,
-                repeticoesController,
-                pesoController,
-                obsController,
-              );
-            },
-            child: const Text('Salvar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // SALVAR REGISTRO DE EXERCÍCIO
-  Future<void> _salvarRegistroExercicio(
-    Map<String, dynamic> exercicio,
-    String treinoId,
-    String dataFormatada,
-    TextEditingController seriesController,
-    TextEditingController repeticoesController,
-    TextEditingController pesoController,
-    TextEditingController obsController,
-  ) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
-    final sucesso = await ExercicioRealizadoService().registrarExercicio(
-      treinoRealizadoId: treinoId,
-      exercicioId: exercicio['id'] ?? '',
-      seriesRealizadas: int.tryParse(seriesController.text) ?? 0,
-      repeticoesRealizadas: int.tryParse(repeticoesController.text) ?? 0,
-      pesoUtilizado: double.tryParse(pesoController.text) ?? 0.0,
-      dataSessao: dataFormatada,
-      observacoes: obsController.text.trim(),
+  if (treinoId != null) {
+    showCustomSnackBar(
+      context,
+      'Treino de "$grupoNome" iniciado!',
+      backgroundColor: Colors.green,
     );
 
     if (!mounted) return;
-    Navigator.pop(context); // fecha loading
-
-    if (sucesso) {
-      showCustomSnackBar(
-        context,
-        '${exercicio['nome']} registrado com sucesso!',
-        backgroundColor: Colors.green,
-      );
-    } else {
-      showCustomSnackBar(
-        context,
-        'Erro ao registrar exercício',
-        backgroundColor: Colors.redAccent.shade100,
-      );
-    }
+    setState(() {
+      for (var ex in _grupos.firstWhere((g) => g['id'] == grupoId)['exercicios']) {
+        final ultima = _ultimaConclusao[ex['id']];
+        if (ultima == null ||
+            ultima.year != hoje.year ||
+            ultima.month != hoje.month ||
+            ultima.day != hoje.day) {
+          _exerciciosEmExecucao[ex['id']] = false;
+        }
+      }
+    });
+  } else {
+    showCustomSnackBar(
+      context,
+      'Erro ao iniciar treino',
+      backgroundColor: Colors.redAccent.shade100,
+    );
   }
+}
+
+  // EXIBIR DIALOG COM EXERCÍCIOS DO GRUPO
+void _exibirDialogoExercicios(
+  String grupoId,
+  String grupoNome,
+  String treinoId,
+  String dataFormatada,
+) {
+  final grupo = _grupos.firstWhere((g) => g['id'] == grupoId);
+  final exercicios = (grupo['exercicios'] as List)
+      .where((ex) => ex['ativo'] == true)
+      .toList();
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Treino: $grupoNome'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView.builder(
+          itemCount: exercicios.length,
+          itemBuilder: (context, index) {
+            final ex = exercicios[index];
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              color: Colors.grey[900],
+              child: ListTile(
+                title: Text(
+                  ex['nome'] ?? '',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  '${ex['series']}x${ex['repeticoes']} - ${(ex['pesoInicial'] ?? 0.0).toStringAsFixed(1)}kg',
+                  style: TextStyle(color: Colors.grey[400]),
+                ),
+                trailing: () {
+                  final ultima = _ultimaConclusao[ex['id']];
+                  final hoje = DateTime.now();
+
+                  // Se já foi concluído hoje → botão desabilitado
+                  if (ultima != null &&
+                      ultima.year == hoje.year &&
+                      ultima.month == hoje.month &&
+                      ultima.day == hoje.day) {
+                    return ElevatedButton(
+                      onPressed: null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Concluído',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }
+
+                  // Se está em execução → mostra botão Encerrar
+                  if (_exerciciosEmExecucao[ex['id']] == true) {
+                    return ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () async {
+                        final confirmar = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Encerrar exercício'),
+                            content: const Text(
+                              'Tem certeza que deseja encerrar este exercício?',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.pop(context, false),
+                                child: const Text('Cancelar'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () =>
+                                    Navigator.pop(context, true),
+                                child: const Text('Encerrar'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirmar == true) {
+                          await _salvarRegistroExercicio(
+                            ex,
+                            treinoId,
+                            dataFormatada,
+                            TextEditingController(
+                              text: ex['series'].toString(),
+                            ),
+                            TextEditingController(
+                              text: ex['repeticoes'].toString(),
+                            ),
+                            TextEditingController(
+                              text: ex['pesoInicial'].toString(),
+                            ),
+                            TextEditingController(),
+                          );
+
+                          if (!mounted) return; // segurança
+                          setState(() {
+                            _exerciciosEmExecucao[ex['id']] = false;
+                            _ultimaConclusao[ex['id']] = DateTime.now();
+                          });
+                        }
+                      },
+                      child: const Text(
+                        'Encerrar',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }
+
+                  // Caso contrário → mostra botão Iniciar
+                  return ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () {
+                      if (!mounted) return; // segurança
+                      setState(() {
+                        _exerciciosEmExecucao[ex['id']] = true;
+                      });
+                    },
+                    child: const Text(
+                      'Iniciar',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                  );
+                }(),
+              ),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Fechar'),
+        ),
+      ],
+    ),
+  );
+}
+
+
+  // DIALOG PARA REGISTRAR EXERCÍCIO
+  void _exibirDialogoRegistroExercicio(
+  Map<String, dynamic> exercicio,
+  String treinoId,
+  String dataFormatada,
+) {
+  final seriesController = TextEditingController(
+    text: exercicio['series']?.toString() ?? '3',
+  );
+  final repeticoesController = TextEditingController(
+    text: exercicio['repeticoes']?.toString() ?? '10',
+  );
+  final pesoController = TextEditingController(
+    text: exercicio['pesoInicial']?.toString() ?? '0',
+  );
+  final obsController = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Registrar: ${exercicio['nome']}'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: seriesController,
+              decoration: const InputDecoration(
+                labelText: 'Séries realizadas',
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: repeticoesController,
+              decoration: const InputDecoration(
+                labelText: 'Repetições realizadas',
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: pesoController,
+              decoration: const InputDecoration(
+                labelText: 'Peso utilizado (kg)',
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: obsController,
+              decoration: const InputDecoration(labelText: 'Observações'),
+              maxLines: 2,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            Navigator.pop(context);
+
+            // segurança: só prossegue se o widget ainda está montado
+            if (!mounted) return;
+
+            await _salvarRegistroExercicio(
+              exercicio,
+              treinoId,
+              dataFormatada,
+              seriesController,
+              repeticoesController,
+              pesoController,
+              obsController,
+            );
+          },
+          child: const Text('Salvar'),
+        ),
+      ],
+    ),
+  );
+}
+
+
+  // SALVAR REGISTRO DE EXERCÍCIO
+  Future<void> _salvarRegistroExercicio(
+  Map<String, dynamic> exercicio,
+  String treinoId,
+  String dataFormatada,
+  TextEditingController seriesController,
+  TextEditingController repeticoesController,
+  TextEditingController pesoController,
+  TextEditingController obsController,
+) async {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const Center(child: CircularProgressIndicator()),
+  );
+
+  final sucesso = await ExercicioRealizadoService().registrarExercicio(
+  treinoRealizadoId: treinoId,
+  exercicioId: exercicio['id'] ?? '',
+  seriesRealizadas: int.tryParse(seriesController.text) ?? 0,
+  repeticoesRealizadas: int.tryParse(repeticoesController.text) ?? 0,
+  pesoUtilizado: double.tryParse(pesoController.text) ?? 0.0,
+  dataSessao: dataFormatada,
+  observacoes: obsController.text.trim(),
+);
+
+
+  if (!mounted) return;
+  Navigator.pop(context); // fecha loading
+
+  if (sucesso) {
+    showCustomSnackBar(
+      context,
+      '${exercicio['nome']} registrado com sucesso!',
+      backgroundColor: Colors.green,
+    );
+  } else {
+    showCustomSnackBar(
+      context,
+      'Erro ao registrar exercício',
+      backgroundColor: Colors.redAccent.shade100,
+    );
+  }
+}
+
 
   Widget _buildGrupoCard(Map<String, dynamic> grupo) {
     final grupoId = grupo['id'];
@@ -835,7 +949,7 @@ class _TreinosPageState extends State<TreinosPage> {
                 const PopupMenuItem(
                   value: 'desativar',
                   child: Text(
-                    'Desativar',
+                    'Excluir',
                     style: TextStyle(color: Colors.redAccent),
                   ),
                 ),
@@ -867,182 +981,271 @@ class _TreinosPageState extends State<TreinosPage> {
           ],
         ),
         children: [
-          // Divider para separar título dos exercícios
-Divider(thickness: 0.5, height: 1, color: Colors.grey[800]),
-if (exercicios.isEmpty)
-  const Padding(
-    padding: EdgeInsets.all(16),
-    child: Text('Nenhum exercício neste grupo.'),
-  ),
-for (var ex in exercicios)
-  Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-    child: Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[800]!, width: 0.5),
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.grey[850],
-      ),
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Nome do exercício
-          Text(
-            ex['nome'] ?? '',
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 15,
-              color: Color.fromARGB(255, 100, 180, 220),
+          Divider(thickness: 0.5, height: 1, color: Colors.grey[800]),
+          if (exercicios.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Nenhum exercício neste grupo.'),
             ),
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 10),
+          for (var ex in exercicios)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Builder(
+                builder: (context) {
+                  final ultima = _ultimaConclusao[ex['id']];
+                  final hoje = DateTime.now();
+                  final concluidoHoje = ultima != null &&
+                      ultima.year == hoje.year &&
+                      ultima.month == hoje.month &&
+                      ultima.day == hoje.day;
 
-          // Séries, repetições e carga
-          Row(
-            children: [
-              Expanded(
-                child: Row(
+                  return Stack(
+                    children: [
+                      // ── Card principal ──
+                      Opacity(
+                        opacity: concluidoHoje ? 0.45 : 1.0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: concluidoHoje
+                                  ? Colors.green.withOpacity(0.4)
+                                  : Colors.grey[800]!,
+                              width: concluidoHoje ? 1.0 : 0.5,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.grey[850],
+                          ),
+                          padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${ex['series']}x',
-                      style: const TextStyle(
-                        color: Color(0xFF1976D2),
-                        fontWeight: FontWeight.bold,
-                      ),
+                    // Linha principal: nome + ícones + menu
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            ex['nome'] ?? '',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                              color: Color.fromARGB(255, 100, 180, 220),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            if (_exerciciosEmExecucao[ex['id']] == true)
+                              // ── Em execução: mostra STOP ──
+                              IconButton(
+                                icon: const Icon(Icons.stop, color: Colors.red),
+                                tooltip: 'Parar',
+                                onPressed: () async {
+                                  final sucesso = await ExercicioService()
+                                      .atualizarStatus(ex['id'], 'REALIZADO');
+                                  if (sucesso) {
+                                    setState(() {
+                                      _exerciciosEmExecucao[ex['id']] = false;
+                                      // registra conclusão com a data/hora atual
+                                      _ultimaConclusao[ex['id']] = DateTime.now();
+                                      // para cronômetro
+                                      _cronometros[ex['id']]?.cancel();
+                                      _cronometros[ex['id']] = null;
+                                    });
+                                  }
+                                },
+                              )
+                            else if (() {
+                              final ultima = _ultimaConclusao[ex['id']];
+                              if (ultima == null) return false;
+                              final hoje = DateTime.now();
+                              return ultima.year == hoje.year &&
+                                  ultima.month == hoje.month &&
+                                  ultima.day == hoje.day;
+                            }())
+                              // ── Concluído hoje: play desabilitado ──
+                              Tooltip(
+                                message: 'Concluído hoje',
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.play_arrow,
+                                    color: Colors.grey,
+                                  ),
+                                  onPressed: null,
+                                ),
+                              )
+                            else
+                              // ── Normal: play ativo ──
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.play_arrow,
+                                  color: Colors.green,
+                                ),
+                                tooltip: 'Iniciar',
+                                onPressed: () async {
+                                  final sucesso = await ExercicioService()
+                                      .atualizarStatus(ex['id'], 'EM_EXECUCAO');
+                                  if (sucesso) {
+                                    setState(() {
+                                      _exerciciosEmExecucao[ex['id']] = true;
+                                      _tempoExercicio[ex['id']] = 0;
+
+                                      // inicia cronômetro em tempo real
+                                      _cronometros[ex['id']]?.cancel();
+                                      _cronometros[ex['id']] = Timer.periodic(
+                                        const Duration(seconds: 1),
+                                        (timer) {
+                                          setState(() {
+                                            _tempoExercicio[ex['id']] =
+                                                (_tempoExercicio[ex['id']] ?? 0) +
+                                                1;
+                                          });
+                                        },
+                                      );
+                                    });
+                                  }
+                                },
+                              ),
+                            PopupMenuButton<String>(
+                              icon: const Icon(
+                                Icons.more_vert,
+                                color: Colors.amber,
+                              ),
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'editar',
+                                  child: Text('Editar'),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'excluir',
+                                  child: Text(
+                                    'Excluir',
+                                    style: TextStyle(color: Colors.redAccent),
+                                  ),
+                                ),
+                              ],
+                              onSelected: (value) {
+                                if (value == 'editar') {
+                                  _editarExercicio(ex);
+                                } else if (value == 'excluir') {
+                                  _confirmarExclusaoExercicio(ex);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 4),
-                    const Text('|', style: TextStyle(color: Colors.grey)),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${ex['repeticoes']} rep.',
-                      style: const TextStyle(
-                        color: Color(0xFF42A5F5),
-                        fontWeight: FontWeight.bold,
-                      ),
+
+                    const SizedBox(height: 6),
+
+                    Row(
+                      children: [
+                        Text(
+                          '${ex['series']}x${ex['repeticoes']} - ${(ex['pesoInicial'] ?? 0.0).toStringAsFixed(1)}kg',
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const Spacer(),
+                        const Icon(Icons.timer, size: 14, color: Colors.amber),
+                        const SizedBox(width: 4),
+                        Text(
+                          _tempoExercicio[ex['id']] != null
+                              ? '${(_tempoExercicio[ex['id']]! ~/ 60).toString().padLeft(2, '0')}:${(_tempoExercicio[ex['id']]! % 60).toString().padLeft(2, '0')}'
+                              : '00:00',
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 4),
-                    const Text('|', style: TextStyle(color: Colors.grey)),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${(ex['pesoInicial'] ?? 0.0).toStringAsFixed(1)}kg',
-                      style: const TextStyle(
-                        color: Color(0xFF90CAF9),
-                        fontWeight: FontWeight.bold,
+
+                    // Observação
+                    if ((ex['observacao'] ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Obs: ${ex['observacao']}',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
+                    ],
                   ],
-                ),
-              ),
-              // Botão de mais opções
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert,
-                    color: Colors.amber, size: 20),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'editar', child: Text('Editar')),
-                  const PopupMenuItem(
-                    value: 'excluir',
-                    child: Text('Excluir',
-                        style: TextStyle(color: Colors.red)),
-                  ),
-                ],
-                onSelected: (value) {
-                  if (value == 'editar') {
-                    _editarExercicio(ex);
-                  } else if (value == 'excluir') {
-                    _confirmarExclusaoExercicio(ex);
-                  }
+                 ),
+                        ),
+                      ),
+                      if (concluidoHoje)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.black.withOpacity(0.35),
+                            ),
+                            child: Center(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.85),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle_outline,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'Concluído hoje',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
                 },
               ),
-            ],
-          ),
-
-          // Observação
-          if ((ex['observacao'] ?? '').isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Obs: ${ex['observacao']}',
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
-          ],
-
-          const SizedBox(height: 12),
-
-          // Botões de iniciar/concluir exercício
-          Row(
-            children: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                icon: const Icon(Icons.add, color: Colors.amber),
+                label: const Text(
+                  'Adicionar Exercício',
+                  style: TextStyle(color: Colors.amber),
                 ),
-                onPressed: () async {
-                  final sucesso = await ExercicioService()
-                      .atualizarStatus(ex['id'], 'EM_EXECUCAO');
-                  if (sucesso) {
-                    setState(() => _exerciciosEmExecucao[ex['id']] = true);
-                    showCustomSnackBar(
-                      context,
-                      'Exercício "${ex['nome']}" iniciado!',
-                      backgroundColor: Colors.green,
-                    );
-                  }
-                },
-                child: const Text('Iniciar'),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                onPressed: () => _adicionarExercicio(grupoId),
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.grey[800],
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-                onPressed: () async {
-                  final sucesso = await ExercicioService()
-                      .atualizarStatus(ex['id'], 'REALIZADO');
-                  if (sucesso) {
-                    setState(() => _exerciciosEmExecucao[ex['id']] = false);
-                    showCustomSnackBar(
-                      context,
-                      'Exercício "${ex['nome']}" concluído!',
-                      backgroundColor: Colors.green,
-                    );
-                  }
-                },
-                child: const Text('Concluir'),
               ),
-            ],
+            ),
           ),
-        ],
-      ),
-    ),
-  ),
-
-Padding(
-  padding: const EdgeInsets.all(12),
-  child: SizedBox(
-    width: double.infinity,
-    child: TextButton.icon(
-      icon: const Icon(Icons.add, color: Colors.amber),
-      label: const Text(
-        'Adicionar Exercício',
-        style: TextStyle(color: Colors.amber),
-      ),
-      onPressed: () => _adicionarExercicio(grupoId),
-      style: TextButton.styleFrom(
-        backgroundColor: Colors.grey[800],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    ),
-  ),
-),
-
         ],
       ),
     );
@@ -1094,16 +1297,16 @@ Padding(
             ),
             // Conteúdo por cima da imagem
             _carregando
-                ? const Center(child: CircularProgressIndicator())
-                : RefreshIndicator(
-                    onRefresh: _carregarGrupos,
-                    child: ListView.builder(
-                      itemCount: _grupos.length,
-                      itemBuilder: (context, index) {
-                        return _buildGrupoCard(_grupos[index]);
-                      },
-                    ),
-                  ),
+              ? const Center(child: CircularProgressIndicator())
+              : RefreshIndicator(
+                onRefresh: _carregarGrupos,
+                child: ListView.builder(
+                  itemCount: _grupos.length,
+                  itemBuilder: (context, index) {
+                   return _buildGrupoCard(_grupos[index]);
+                 },
+                ),
+              ),
           ],
         ),
       ),

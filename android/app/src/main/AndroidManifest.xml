@@ -2,6 +2,9 @@
 
     <!-- Permissão de internet -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+    <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
+
 
     <application
         android:label="gym_manager_flutter"

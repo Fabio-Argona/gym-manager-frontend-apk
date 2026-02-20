@@ -2,10 +2,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../dto/ExercicioRealizadoDTO.dart';
+import '../constants/constants.dart';
 
 class ExercicioRealizadoService {
-  final String baseUrl = 'http://localhost:8080';
-
   // INICIAR TREINO (criar TreinoRealizado)
   Future<String?> iniciarTreino(String grupoId, String data) async {
     try {
@@ -17,7 +16,7 @@ class ExercicioRealizadoService {
 
       // Tenta o endpoint principal
       final response = await http.post(
-        Uri.parse('$baseUrl/treinos/realizado'),
+        Uri.parse(endpointTreinosRealizado),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -67,7 +66,7 @@ class ExercicioRealizadoService {
       if (token.isEmpty) return false;
 
       final response = await http.post(
-        Uri.parse('$baseUrl/exercicios-realizados'),
+        Uri.parse(endpointExerciciosRealizados),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -76,7 +75,7 @@ class ExercicioRealizadoService {
           'treinoRealizadoId': treinoRealizadoId,
           'exercicioId': exercicioId,
           'seriesRealizadas': seriesRealizadas,
-          'repeticoesRealizadas': repeticoesRealizadas,
+          'repeticoes_Realizadas': repeticoesRealizadas,
           'pesoUtilizado': pesoUtilizado,
           'dataSessao': dataSessao,
           'observacoes': observacoes ?? '',
@@ -107,7 +106,7 @@ class ExercicioRealizadoService {
 
       if (alunoId.isEmpty || token.isEmpty) return [];
 
-      String url = '$baseUrl/exercicios-realizados/progressao?alunoId=$alunoId';
+      String url = '$endpointExerciciosRealizados/progressao?alunoId=$alunoId';
 
       if (exercicioId != null) url += '&exercicioId=$exercicioId';
       if (dataInicio != null) url += '&dataInicio=$dataInicio';
@@ -139,7 +138,7 @@ class ExercicioRealizadoService {
       if (token.isEmpty) return null;
 
       final response = await http.get(
-        Uri.parse('$baseUrl/treinos/realizado/grupo/$grupoId/ultima'),
+        Uri.parse('$endpointTreinosRealizado/grupo/$grupoId/ultima'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -164,7 +163,7 @@ class ExercicioRealizadoService {
       if (alunoId.isEmpty || token.isEmpty) return [];
 
       final response = await http.get(
-        Uri.parse('$baseUrl/treinos/realizado/aluno/$alunoId'),
+        Uri.parse('$endpointTreinosRealizado/aluno/$alunoId'),
         headers: {'Authorization': 'Bearer $token'},
       );
 

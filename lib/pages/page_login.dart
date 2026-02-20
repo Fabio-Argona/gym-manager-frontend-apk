@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../services/auth_service.dart';
@@ -37,12 +38,6 @@ class _LoginPageState extends State<LoginPage> {
     mask: '##/##/####',
     filter: {"#": RegExp(r'[0-9]')},
   );
-
-  String _formatarData(String data) {
-    final partes = data.split('/');
-    if (partes.length != 3) return '';
-    return '${partes[2]}-${partes[1]}-${partes[0]}';
-  }
 
   bool _emailValido(String email) {
     final regex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
@@ -242,7 +237,7 @@ class _LoginPageState extends State<LoginPage> {
                                 }
                               },
                               icon: const Icon(Icons.fingerprint),
-                              label: const Text('Impressão Digital'),
+                              label: const Text('Biometria'),
                             ),
                           ),
                         ],
@@ -267,27 +262,27 @@ class _LoginPageState extends State<LoginPage> {
                                 setState(() => isLoading = true);
 
                                 try {
-                                  bool success;
+                                  // Primeiro tenta autenticação biométrica
+                                  final biometriaOk = await authService
+                                      .authenticateWithBiometrics();
 
-                                  if (isLogin) {
-                                    success = await authService.login(
-                                      email,
-                                      password,
+                                  if (!biometriaOk) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Autenticação biométrica falhou',
+                                        ),
+                                      ),
                                     );
-                                  } else {
-                                    final dataFormatada = _formatarData(
-                                      dataController.text,
-                                    );
-                                    success = await authService.register({
-                                      "nome": nome,
-                                      "cpf": cpfController.text,
-                                      "email": email,
-                                      "telefone": telefoneController.text,
-                                      "data_nascimento": dataFormatada,
-                                      "login": email,
-                                      "password": password,
-                                    });
+                                    setState(() => isLoading = false);
+                                    return;
                                   }
+
+                                  // Se biometria passou, chama o login normal
+                                  final success = await authService.login(
+                                    email,
+                                    password,
+                                  );
 
                                   setState(() => isLoading = false);
 
@@ -295,11 +290,9 @@ class _LoginPageState extends State<LoginPage> {
                                     final nomeSalvo = await authService
                                         .getNomeSalvo();
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
+                                      const SnackBar(
                                         content: Text(
-                                          isLogin
-                                              ? 'Login realizado com sucesso!'
-                                              : 'Cadastro realizado com sucesso!',
+                                          'Login realizado com sucesso!',
                                         ),
                                       ),
                                     );
@@ -314,16 +307,17 @@ class _LoginPageState extends State<LoginPage> {
                                   }
                                 } catch (e) {
                                   setState(() => isLoading = false);
-                                  // ignore: use_build_context_synchronously
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text(e.toString())),
                                   );
                                 }
                               }
                             },
+
                             child: Text(isLogin ? "Entrar" : "Cadastrar"),
                           ),
                     const SizedBox(height: 16),
+
                     Center(
                       child: TextButton(
                         onPressed: () => setState(() => isLogin = !isLogin),

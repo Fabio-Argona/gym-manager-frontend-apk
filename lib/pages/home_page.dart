@@ -4,6 +4,7 @@ import 'package:flutter_application_treinoabc/widgets/footer_nav.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
+import '../constants/constants.dart';
 
 import 'treinos/treinos_page.dart';
 import 'progresso_page.dart';
@@ -41,8 +42,7 @@ class _HomePageState extends State<HomePage> {
     if (alunoId != null && alunoId!.isNotEmpty) {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       setState(() {
-        imagemUrl =
-            'http://localhost:8080/api/uploads/$alunoId.jpeg?t=$timestamp';
+        imagemUrl = '$endpointUploads/$alunoId.jpeg?t=$timestamp';
       });
     }
   }
@@ -59,7 +59,7 @@ class _HomePageState extends State<HomePage> {
 
     final fileBytes = result.files.first.bytes!;
     final fileName = '$alunoId.jpeg';
-    final uri = Uri.parse('http://localhost:8080/api/upload/$alunoId');
+    final uri = Uri.parse('$endpointUpload/$alunoId');
 
     final request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $token'
@@ -73,8 +73,7 @@ class _HomePageState extends State<HomePage> {
     if (response.statusCode == 200) {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       setState(() {
-        imagemUrl =
-            'http://localhost:8080/api/uploads/$alunoId.jpeg?t=$timestamp';
+        imagemUrl = '$endpointUploads/$alunoId.jpeg?t=$timestamp';
       });
     } else {
       print('Erro ao enviar imagem: ${response.statusCode}');
@@ -223,19 +222,6 @@ class _HomePageState extends State<HomePage> {
     setState(() => _selectedIndex = 2); // Muda para a aba ProfilePage
   }
 
-  String _mensagemMotivadora() {
-    final frases = [
-      'Bora treinar e conquistar seus objetivos! 💪',
-      'Cada treino é um passo à frente 🚀',
-      'Foco, força e fé 🔥',
-      'A disciplina vence o cansaço 🧠',
-      'Você está superando limites hoje 👊',
-      'O corpo alcança o que a mente acredita 🏋️‍♂️',
-    ];
-    frases.shuffle();
-    return frases.first;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -244,38 +230,10 @@ class _HomePageState extends State<HomePage> {
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        titleSpacing: 12,
+        title: Row(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  widget.nome,
-                  style: const TextStyle(
-                    color: Colors.greenAccent,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _mensagemMotivadora(),
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 13,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ),
-        centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: PopupMenuButton<String>(
+            PopupMenuButton<String>(
               onSelected: (value) {
                 switch (value) {
                   case 'editar':
@@ -314,8 +272,17 @@ class _HomePageState extends State<HomePage> {
                     : null,
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 10),
+            Text(
+              widget.nome,
+              style: const TextStyle(
+                color: Colors.greenAccent,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
       body: Stack(
         children: [

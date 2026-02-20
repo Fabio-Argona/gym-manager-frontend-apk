@@ -3,18 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/date_utils.dart' as meu_date_utils;
+import '../constants/constants.dart';
 
 import 'package:local_auth/local_auth.dart';
 
 class AuthService extends ChangeNotifier {
-  final String baseUrl = 'http://localhost:8080';
   final LocalAuthentication _localAuth = LocalAuthentication();
 
   // LOGIN
   Future<bool> login(String email, String senha) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/login'),
+        Uri.parse(endpointLogin),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': senha}),
       );
@@ -66,7 +66,7 @@ class AuthService extends ChangeNotifier {
       print('Dados enviados no register: ${jsonEncode(dados)}');
 
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/register'),
+        Uri.parse(endpointRegister),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(dados),
       );
@@ -98,7 +98,7 @@ class AuthService extends ChangeNotifier {
     final token = prefs.getString('token');
 
     final response = await http.put(
-      Uri.parse('$baseUrl/alunos/$alunoId/nome'),
+      Uri.parse('$endpointAlunos/$alunoId/nome'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -130,7 +130,7 @@ class AuthService extends ChangeNotifier {
     print('Data formatada para envio: $dataFormatada');
 
     final response = await http.put(
-      Uri.parse('$baseUrl/alunos/$alunoId'),
+      Uri.parse('$endpointAlunos/$alunoId'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -164,7 +164,7 @@ class AuthService extends ChangeNotifier {
     final token = prefs.getString('token');
 
     final response = await http.put(
-      Uri.parse('$baseUrl/alunos/$alunoId/fisico'),
+      Uri.parse('$endpointAlunos/$alunoId/fisico'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -200,7 +200,7 @@ class AuthService extends ChangeNotifier {
     final token = prefs.getString('token');
 
     final response = await http.put(
-      Uri.parse('$baseUrl/alunos/$alunoId/medidas'),
+      Uri.parse('$endpointAlunos/$alunoId/medidas'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -232,7 +232,7 @@ class AuthService extends ChangeNotifier {
     final token = prefs.getString('token');
 
     final response = await http.put(
-      Uri.parse('$baseUrl/alunos/$alunoId/objetivo'),
+      Uri.parse('$endpointAlunos/$alunoId/objetivo'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -273,7 +273,7 @@ class AuthService extends ChangeNotifier {
       print('Enviando solicitação de recuperação para email: $email');
 
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/recuperar-senha'),
+        Uri.parse(endpointRecuperarSenha),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email}),
       );
@@ -300,7 +300,7 @@ class AuthService extends ChangeNotifier {
       print('Redefinindo senha com token: $token');
 
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/resetar-senha'),
+        Uri.parse(endpointResetarSenha),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'token': token, 'novaSenha': novaSenha}),
       );
@@ -326,7 +326,11 @@ class AuthService extends ChangeNotifier {
     try {
       bool authenticated = await _localAuth.authenticate(
         localizedReason: 'Por favor, autentique-se para continuar.',
-        options: const AuthenticationOptions(stickyAuth: true),
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          useErrorDialogs: true,
+          stickyAuth: true,
+        ),
       );
       return authenticated;
     } catch (e) {

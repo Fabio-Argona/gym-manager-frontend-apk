@@ -2,10 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/constants.dart';
 
 class ExercicioService {
-  final String baseUrl = 'http://localhost:8080';
-
   Future<Map<String, String>> _getHeaders({bool includeAlunoId = false}) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
@@ -58,13 +57,12 @@ class ExercicioService {
       'aluno_id': alunoId,
     };
 
-    // Log detalhado para depuração
-    print('POST $baseUrl/exercicios');
+    print('POST $endpointExercicios');
     print('Headers: $headers');
     print('Body: ${jsonEncode(body)}');
 
     final response = await http.post(
-      Uri.parse('$baseUrl/exercicios'),
+      Uri.parse(endpointExercicios),
       headers: headers,
       body: jsonEncode(body),
     );
@@ -81,7 +79,7 @@ class ExercicioService {
     final headers = await _getHeaders(includeAlunoId: true);
 
     final response = await http.get(
-      Uri.parse('$baseUrl/exercicios'),
+      Uri.parse(endpointExercicios),
       headers: headers,
     );
 
@@ -143,17 +141,17 @@ class ExercicioService {
       'grupoMuscular': grupoMuscular,
       'series': dados['series'],
       'repeticoes': dados['repeticoes'] ?? 0,
-      'pesoInicial': dados['pesoInicial'] ?? 0.0,
+      'peso_inicial': dados['pesoInicial'] ?? 0.0,
       'observacao': dados['observacao'] ?? '',
       'ativo': dados['ativo'],
     };
 
-    print('PUT $baseUrl/exercicios/$id');
+    print('PUT $endpointExercicios/$id');
     print('Headers: $headers');
     print('Body: ${jsonEncode(body)}');
 
     final response = await http.put(
-      Uri.parse('$baseUrl/exercicios/$id'),
+      Uri.parse('$endpointExercicios/$id'),
       headers: headers,
       body: jsonEncode(body),
     );
@@ -175,7 +173,7 @@ class ExercicioService {
     }
 
     final response = await http.delete(
-      Uri.parse('$baseUrl/grupos/$grupoId/com-exercicios'),
+      Uri.parse('$endpointGrupos/$grupoId/com-exercicios'),
       headers: {'Authorization': 'Bearer $token'},
     );
 
@@ -219,13 +217,12 @@ class ExercicioService {
   }
 
   Future<bool> atualizarStatus(String id, String status) async {
+    final headers = await _getHeaders();
     final response = await http.patch(
-      Uri.parse('$baseUrl/$id/status'),
-      headers: {'Content-Type': 'application/json'},
+      Uri.parse('$endpointExercicios/$id/status'),
+      headers: headers,
       body: jsonEncode({'status': status}),
     );
     return response.statusCode == 200;
   }
 }
-
-

@@ -4,6 +4,7 @@ import 'package:flutter_application_treinoabc/dto/AlunoDTO.dart';
 import 'package:flutter_application_treinoabc/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import '../constants/constants.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -51,7 +52,7 @@ class _ProfilePageState extends State<ProfilePage>
     }
 
     final response = await http.get(
-      Uri.parse('http://localhost:8080/alunos/$alunoId'),
+      Uri.parse('$endpointAlunos/$alunoId'),
       headers: {'Authorization': 'Bearer $token'},
     );
 
@@ -193,7 +194,9 @@ class _ProfilePageState extends State<ProfilePage>
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: DropdownButtonFormField<String>(
-            initialValue: (sexoSelecionado.isEmpty) ? 'Masculino' : sexoSelecionado,
+            initialValue: (sexoSelecionado.isEmpty)
+                ? 'Masculino'
+                : sexoSelecionado,
             items: const [
               DropdownMenuItem(value: 'Masculino', child: Text('Masculino')),
               DropdownMenuItem(value: 'Feminino', child: Text('Feminino')),
