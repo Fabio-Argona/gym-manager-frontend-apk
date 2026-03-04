@@ -292,8 +292,6 @@ class _ProgressoPageState extends State<ProgressoPage> {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                 children: [
                   _buildHeader(),
-                  const SizedBox(height: 20),
-                  _buildStatsRow(),
                   const SizedBox(height: 16),
                   _buildRecompensasCard(),
                   const SizedBox(height: 16),
@@ -343,8 +341,11 @@ class _ProgressoPageState extends State<ProgressoPage> {
   // ─── Header ─────────────────────────────────────────────────────────────────
 
   Widget _buildHeader() {
+    final cor = _corNivel();
+    final nivel = _nivelAtual();
+    final icon = _iconNivel();
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: Column(
@@ -354,69 +355,64 @@ class _ProgressoPageState extends State<ProgressoPage> {
                 'Seu Progresso',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.3,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
                 ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.fitness_center_rounded,
+                    color: _textHint,
+                    size: 12,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$_totalTreinos treinos',
+                    style: const TextStyle(color: _textHint, fontSize: 11),
+                  ),
+                  const Text(
+                    '  ·  ',
+                    style: TextStyle(color: _textHint, fontSize: 11),
+                  ),
+                  Icon(
+                    Icons.calendar_today_rounded,
+                    color: _textHint,
+                    size: 11,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$_diasAtivos dias ativos',
+                    style: const TextStyle(color: _textHint, fontSize: 11),
+                  ),
+                ],
               ),
             ],
           ),
         ),
-        if (_ultimaEvolucao != null)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: _inputBg,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _border),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.update_rounded, color: _textHint, size: 13),
-                const SizedBox(width: 4),
-                Text(
-                  _formatarData(
-                    _ultimaEvolucao!['data']?.toString() ??
-                        _ultimaEvolucao!['createdAt']?.toString(),
-                  ),
-                  style: const TextStyle(color: _textHint, fontSize: 11),
+        const SizedBox(width: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: cor.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: cor.withOpacity(0.4)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: cor, size: 14),
+              const SizedBox(width: 6),
+              Text(
+                nivel,
+                style: TextStyle(
+                  color: cor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                 ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  // ─── Stats row ──────────────────────────────────────────────────────────────
-
-  Widget _buildStatsRow() {
-    return Row(
-      children: [
-        Expanded(
-          child: _statCard(
-            icon: Icons.fitness_center_rounded,
-            value: '$_totalTreinos',
-            label: 'Treinos',
-            color: _primary,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _statCard(
-            icon: Icons.calendar_today_rounded,
-            value: '$_diasAtivos',
-            label: 'Dias ativos',
-            color: _accent,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _statCard(
-            icon: _iconNivel(),
-            value: _nivelAtual(),
-            label: '$_diasAtivos dias',
-            color: _corNivel(),
+              ),
+            ],
           ),
         ),
       ],
@@ -638,49 +634,6 @@ class _ProgressoPageState extends State<ProgressoPage> {
                 ],
               );
             }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _statCard({
-    required IconData icon,
-    required String value,
-    required String label,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
-      decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _border.withOpacity(0.7)),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.13),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(color: _textHint, fontSize: 11),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
