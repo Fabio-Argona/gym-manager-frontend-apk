@@ -284,14 +284,14 @@ class _TreinosPageState extends State<TreinosPage> {
             .toString()
             .toLowerCase();
 
-        int _prioridade(String g) {
+        int prioridade(String g) {
           if (g == 'peito') return 0;
           if (g == 'costas') return 1;
           return 2;
         }
 
-        final pa = _prioridade(ga);
-        final pb = _prioridade(gb);
+        final pa = prioridade(ga);
+        final pb = prioridade(gb);
         if (pa != pb) return pa.compareTo(pb);
         return ga.compareTo(gb);
       });
