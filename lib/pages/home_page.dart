@@ -640,15 +640,37 @@ class _HomePageState extends State<HomePage>
                       letterSpacing: 0.3,
                     ),
                   ),
-                  Text(
-                    widget.nome,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 0.2,
+                  AnimatedBuilder(
+                    animation: _ringController,
+                    builder: (context, child) {
+                      final v = _ringController.value;
+                      return ShaderMask(
+                        blendMode: BlendMode.srcIn,
+                        shaderCallback: (bounds) => LinearGradient(
+                          colors: const [
+                            Colors.white,
+                            _accent,
+                            _primary,
+                            _accent,
+                            Colors.white,
+                          ],
+                          stops: const [0.0, 0.3, 0.5, 0.7, 1.0],
+                          begin: Alignment(-3.0 + v * 4.0, 0),
+                          end: Alignment(-1.0 + v * 4.0, 0),
+                        ).createShader(bounds),
+                        child: child,
+                      );
+                    },
+                    child: Text(
+                      widget.nome,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.2,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 3),
                   Row(
