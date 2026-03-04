@@ -299,7 +299,7 @@ class _LoginPageState extends State<LoginPage> {
                   'Esqueci minha senha',
                   style: TextStyle(
                     color: _accent,
-                    fontSize: 13,
+                    fontSize: 11,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -607,7 +607,7 @@ class _LoginPageState extends State<LoginPage> {
         Text(
           'dev: Fabio Argona · Patricia Martins',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 10, color: _border, letterSpacing: 0.3),
+          style: TextStyle(fontSize: 10, color: _textHint, letterSpacing: 0.3),
         ),
         SizedBox(height: 8),
       ],
