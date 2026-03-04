@@ -3,6 +3,19 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 
+// ─── Design tokens ─────────────────────────────────────────────────────────────
+const _bg1 = Color(0xFF0D0D1A);
+const _bg2 = Color(0xFF1A1040);
+const _card = Color(0xFF1C1B2E);
+const _primary = Color(0xFF7C3AED);
+const _accent = Color(0xFF06B6D4);
+const _success = Color(0xFF10B981);
+const _error = Color(0xFFEF4444);
+const _inputBg = Color(0xFF252438);
+const _border = Color(0xFF3A3857);
+const _textHint = Color(0xFF8884A8);
+const _textSub = Color(0xFFB0ADCC);
+
 class RecuperarSenhaPage extends StatefulWidget {
   const RecuperarSenhaPage({super.key});
 
@@ -42,6 +55,46 @@ class _RecuperarSenhaPageState extends State<RecuperarSenhaPage> {
         senha == confirma;
   }
 
+  void _snack(String message, {bool success = false}) {
+    final color = success ? _success : _error;
+    final icon = success
+        ? Icons.check_circle_outline_rounded
+        : Icons.error_outline_rounded;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        content: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            border: Border.all(color: color.withOpacity(0.5)),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _redefinir(AuthService authService) async {
     setState(() => isLoading = true);
     try {
@@ -53,299 +106,351 @@ class _RecuperarSenhaPageState extends State<RecuperarSenhaPage> {
       setState(() => senhaRedefinida = true);
     } catch (e) {
       final msg = e.toString().replaceAll('Exception: ', '');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg), backgroundColor: Colors.red[700]),
-        );
-      }
+      if (mounted) _snack(msg);
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
+  }
+
+  Widget _buildInput(
+    String label,
+    IconData icon, {
+    TextEditingController? controller,
+    TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
+    int? maxLength,
+    String? helperText,
+    bool obscure = false,
+    Widget? suffix,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      obscureText: obscure,
+      inputFormatters: inputFormatters,
+      maxLength: maxLength,
+      onChanged: (_) => setState(() {}),
+      style: const TextStyle(color: Colors.white, fontSize: 15),
+      decoration: InputDecoration(
+        labelText: label,
+        helperText: helperText,
+        helperStyle: const TextStyle(color: _textHint, fontSize: 12),
+        counterStyle: const TextStyle(color: _textHint, fontSize: 11),
+        prefixIcon: Icon(icon, color: _primary, size: 20),
+        suffixIcon: suffix,
+        filled: true,
+        fillColor: _inputBg,
+        labelStyle: const TextStyle(color: _textHint, fontSize: 14),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: _border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: _primary, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 16,
+          horizontal: 16,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSucesso() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _success.withOpacity(0.12),
+            border: Border.all(color: _success.withOpacity(0.4)),
+          ),
+          child: const Icon(
+            Icons.check_circle_outline_rounded,
+            color: _success,
+            size: 48,
+          ),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Senha redefinida!',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Você já pode entrar com sua nova senha.',
+          style: TextStyle(color: _textSub, fontSize: 14),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 28),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+            child: const Text('Ir para Login'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormulario(AuthService authService) {
+    final senhaDiferente =
+        _confirmaSenhaController.text.isNotEmpty &&
+        _senhaController.text != _confirmaSenhaController.text;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildInput(
+          'Email',
+          Icons.alternate_email_rounded,
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+        ),
+        const SizedBox(height: 14),
+        _buildInput(
+          '6 primeiros dígitos do CPF',
+          Icons.badge_outlined,
+          controller: _cpf6Controller,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          maxLength: 6,
+          helperText: 'Ex: CPF 123.456.789-00 → digite 123456',
+        ),
+        const SizedBox(height: 14),
+        _buildInput(
+          'Nova Senha',
+          Icons.lock_outline_rounded,
+          controller: _senhaController,
+          obscure: !mostrarSenha,
+          helperText: 'Mínimo 6 caracteres',
+          suffix: IconButton(
+            icon: Icon(
+              mostrarSenha
+                  ? Icons.visibility_rounded
+                  : Icons.visibility_off_rounded,
+              color: _textHint,
+              size: 20,
+            ),
+            onPressed: () => setState(() => mostrarSenha = !mostrarSenha),
+          ),
+        ),
+        const SizedBox(height: 14),
+        _buildInput(
+          'Confirmar Nova Senha',
+          Icons.lock_rounded,
+          controller: _confirmaSenhaController,
+          obscure: !mostrarConfirma,
+          suffix: IconButton(
+            icon: Icon(
+              mostrarConfirma
+                  ? Icons.visibility_rounded
+                  : Icons.visibility_off_rounded,
+              color: _textHint,
+              size: 20,
+            ),
+            onPressed: () => setState(() => mostrarConfirma = !mostrarConfirma),
+          ),
+        ),
+        if (senhaDiferente) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: _error.withOpacity(0.1),
+              border: Border.all(color: _error.withOpacity(0.4)),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: const [
+                Icon(Icons.warning_amber_rounded, color: _error, size: 16),
+                SizedBox(width: 8),
+                Text(
+                  'As senhas não coincidem',
+                  style: TextStyle(color: _error, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 24),
+        isLoading
+            ? const Center(child: CircularProgressIndicator(color: _primary))
+            : ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primary,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: _primary.withOpacity(0.3),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                onPressed: _formularioValido
+                    ? () => _redefinir(authService)
+                    : null,
+                child: const Text('Redefinir Senha'),
+              ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context, listen: false);
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/images/Copilot_20251029_183912.png'),
-                repeat: ImageRepeat.repeat,
-                alignment: Alignment.topLeft,
-                scale: 1.0,
-              ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: _bg1,
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [_bg1, _bg2, Color(0xFF0E1628)],
+              stops: [0.0, 0.55, 1.0],
             ),
           ),
-          Container(color: Colors.black.withOpacity(0.3)),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: ListView(
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 32),
+                  // ── Botão voltar ────────────────────────────────────────
                   Row(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Recuperar Senha',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.amber,
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: _card,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: _border),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: Colors.white,
+                            size: 16,
+                          ),
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Informe seu email, os 6 primeiros dígitos do CPF e a nova senha.',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                   const SizedBox(height: 32),
 
-                  if (senhaRedefinida)
-                    Container(
+                  // ── Ícone + título ──────────────────────────────────────
+                  Center(
+                    child: Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.15),
-                        border: Border.all(color: Colors.green),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        children: [
-                          const Icon(
-                            Icons.check_circle,
-                            color: Colors.green,
-                            size: 56,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Senha redefinida com sucesso!',
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Você já pode fazer login com sua nova senha.',
-                            style: TextStyle(color: Colors.grey, fontSize: 14),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 20),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepPurple,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 16,
-                                horizontal: 40,
-                              ),
-                            ),
-                            onPressed: () => Navigator.pushReplacementNamed(
-                              context,
-                              '/login',
-                            ),
-                            child: const Text('Ir para Login'),
-                          ),
-                        ],
-                      ),
-                    )
-                  else ...[
-                    // EMAIL
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      style: const TextStyle(color: Colors.white),
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: const Icon(
-                          Icons.email,
-                          color: Colors.deepPurple,
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            _primary.withOpacity(0.25),
+                            _accent.withOpacity(0.15),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        filled: true,
-                        fillColor: Colors.grey[900],
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _primary.withOpacity(0.4),
+                          width: 1.5,
                         ),
-                        labelStyle: const TextStyle(color: Colors.white),
+                      ),
+                      child: const Icon(
+                        Icons.lock_reset_rounded,
+                        color: _primary,
+                        size: 36,
                       ),
                     ),
-                    const SizedBox(height: 16),
-
-                    // 6 PRIMEIROS DÍGITOS DO CPF
-                    TextFormField(
-                      controller: _cpf6Controller,
-                      keyboardType: TextInputType.number,
-                      maxLength: 6,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        letterSpacing: 6,
-                        fontSize: 18,
-                      ),
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        labelText: '6 primeiros dígitos do CPF',
-                        prefixIcon: const Icon(
-                          Icons.badge,
-                          color: Colors.deepPurple,
-                        ),
-                        helperText: 'Ex: CPF 123.456.789-00 → digite 123456',
-                        helperStyle: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                        counterStyle: const TextStyle(color: Colors.grey),
-                        filled: true,
-                        fillColor: Colors.grey[900],
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        labelStyle: const TextStyle(color: Colors.white),
-                      ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Recuperar Senha',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: 0.3,
                     ),
-                    const SizedBox(height: 16),
-
-                    // NOVA SENHA
-                    TextFormField(
-                      controller: _senhaController,
-                      obscureText: !mostrarSenha,
-                      style: const TextStyle(color: Colors.white),
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        labelText: 'Nova Senha',
-                        prefixIcon: const Icon(
-                          Icons.lock,
-                          color: Colors.deepPurple,
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            mostrarSenha
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                            color: Colors.deepPurple,
-                          ),
-                          onPressed: () =>
-                              setState(() => mostrarSenha = !mostrarSenha),
-                        ),
-                        helperText: 'Mínimo 6 caracteres',
-                        helperStyle: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[900],
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        labelStyle: const TextStyle(color: Colors.white),
-                      ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Informe seu email, os 6 primeiros dígitos\ndo CPF e escolha uma nova senha.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: _textSub,
+                      height: 1.5,
                     ),
-                    const SizedBox(height: 16),
+                  ),
+                  const SizedBox(height: 32),
 
-                    // CONFIRMAR SENHA
-                    TextFormField(
-                      controller: _confirmaSenhaController,
-                      obscureText: !mostrarConfirma,
-                      style: const TextStyle(color: Colors.white),
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        labelText: 'Confirmar Nova Senha',
-                        prefixIcon: const Icon(
-                          Icons.lock_outline,
-                          color: Colors.deepPurple,
+                  // ── Card principal ──────────────────────────────────────
+                  Container(
+                    decoration: BoxDecoration(
+                      color: _card,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: _border.withOpacity(0.6)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.35),
+                          blurRadius: 32,
+                          offset: const Offset(0, 12),
                         ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            mostrarConfirma
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                            color: Colors.deepPurple,
-                          ),
-                          onPressed: () => setState(
-                            () => mostrarConfirma = !mostrarConfirma,
-                          ),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[900],
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        labelStyle: const TextStyle(color: Colors.white),
-                      ),
+                      ],
                     ),
+                    padding: const EdgeInsets.all(24),
+                    child: senhaRedefinida
+                        ? _buildSucesso()
+                        : _buildFormulario(authService),
+                  ),
 
-                    if (_confirmaSenhaController.text.isNotEmpty &&
-                        _senhaController.text !=
-                            _confirmaSenhaController.text) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.15),
-                          border: Border.all(color: Colors.red),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Text(
-                          'As senhas não coincidem',
-                          style: TextStyle(color: Colors.red, fontSize: 12),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 20),
 
-                    const SizedBox(height: 28),
-
-                    isLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.deepPurple,
-                            ),
-                          )
-                        : ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepPurple,
-                              foregroundColor: Colors.white,
-                              disabledBackgroundColor: Colors.deepPurple
-                                  .withOpacity(0.3),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              textStyle: const TextStyle(fontSize: 16),
-                            ),
-                            onPressed: _formularioValido
-                                ? () => _redefinir(authService)
-                                : null,
-                            child: const Text('Redefinir Senha'),
-                          ),
-
-                    const SizedBox(height: 16),
+                  if (!senhaRedefinida)
                     Center(
                       child: TextButton(
                         onPressed: () => Navigator.pop(context),
                         child: const Text(
                           'Voltar ao Login',
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(color: _textHint, fontSize: 13),
                         ),
                       ),
                     ),
-                  ],
                 ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
