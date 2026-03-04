@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_application_treinoabc/services/treino_service.dart';
@@ -37,15 +36,14 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   late final List<Widget> _pages;
   String? imagemUrl;
   String? alunoId;
   int _diasAtivos = 0;
   late AnimationController _ringController;
-  late AnimationController _shimmerController;
-  Timer? _shimmerTimer;
 
   static const _limitesNivel = [0, 10, 30, 60, 100, 150, 200, 300, 500];
   static const _nomesNivel = [
@@ -105,22 +103,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(seconds: 3),
     )..repeat();
-    _shimmerController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
-    // dispara imediatamente e depois a cada 20 segundos
-    _shimmerController.forward(from: 0);
-    _shimmerTimer = Timer.periodic(const Duration(seconds: 20), (_) {
-      if (mounted) _shimmerController.forward(from: 0);
-    });
   }
 
   @override
   void dispose() {
     _ringController.dispose();
-    _shimmerController.dispose();
-    _shimmerTimer?.cancel();
     super.dispose();
   }
 
@@ -654,9 +641,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ),
                   ),
                   AnimatedBuilder(
-                    animation: _shimmerController,
+                    animation: _ringController,
                     builder: (context, child) {
-                      final v = _shimmerController.value;
+                      final v = _ringController.value;
                       return ShaderMask(
                         blendMode: BlendMode.srcIn,
                         shaderCallback: (bounds) => LinearGradient(
