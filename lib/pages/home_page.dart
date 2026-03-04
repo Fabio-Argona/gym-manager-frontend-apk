@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_treinoabc/services/treino_service.dart';
 import 'package:flutter_application_treinoabc/widgets/footer_nav.dart';
+import 'dart:convert';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
@@ -39,6 +40,51 @@ class _HomePageState extends State<HomePage> {
   late final List<Widget> _pages;
   String? imagemUrl;
   String? alunoId;
+  int _diasAtivos = 0;
+
+  static const _limitesNivel = [0, 10, 30, 60, 100, 150, 200, 300, 500];
+  static const _nomesNivel = [
+    'Iniciante',
+    'Aprendiz',
+    'Dedicado',
+    'Consistente',
+    'Intermediário',
+    'Avançado',
+    'Elite',
+    'Mestre',
+    'Lendário',
+  ];
+
+  String get _nivelAtual {
+    for (int i = _limitesNivel.length - 1; i >= 0; i--) {
+      if (_diasAtivos >= _limitesNivel[i]) return _nomesNivel[i];
+    }
+    return _nomesNivel[0];
+  }
+
+  Color get _corNivel {
+    if (_diasAtivos >= 500) return const Color(0xFFFFD700);
+    if (_diasAtivos >= 300) return const Color(0xFFAB47BC);
+    if (_diasAtivos >= 200) return const Color(0xFF26C6DA);
+    if (_diasAtivos >= 150) return const Color(0xFF42A5F5);
+    if (_diasAtivos >= 100) return const Color(0xFF10B981);
+    if (_diasAtivos >= 60) return const Color(0xFFF59E0B);
+    if (_diasAtivos >= 30) return const Color(0xFF06B6D4);
+    if (_diasAtivos >= 10) return const Color(0xFF7C3AED);
+    return _textHint;
+  }
+
+  IconData get _iconNivel {
+    if (_diasAtivos >= 500) return Icons.auto_awesome_rounded;
+    if (_diasAtivos >= 300) return Icons.workspace_premium_rounded;
+    if (_diasAtivos >= 200) return Icons.diamond_rounded;
+    if (_diasAtivos >= 150) return Icons.star_rounded;
+    if (_diasAtivos >= 100) return Icons.emoji_events_rounded;
+    if (_diasAtivos >= 60) return Icons.local_fire_department_rounded;
+    if (_diasAtivos >= 30) return Icons.fitness_center_rounded;
+    if (_diasAtivos >= 10) return Icons.bolt_rounded;
+    return Icons.eco_rounded;
+  }
 
   @override
   void initState() {
@@ -49,6 +95,32 @@ class _HomePageState extends State<HomePage> {
       const ProfilePage(),
     ];
     carregarImagem();
+    _carregarDiasAtivos();
+  }
+
+  Future<void> _carregarDiasAtivos() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final id = prefs.getString('alunoId') ?? '';
+      final token = prefs.getString('token') ?? '';
+      if (id.isEmpty || token.isEmpty) return;
+      final res = await http.get(
+        Uri.parse('$endpointTreinosRealizado/aluno/$id'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (res.statusCode == 200) {
+        final lista = jsonDecode(res.body) as List;
+        final datas = lista
+            .map(
+              (s) => (s['data'] ?? s['dataSessao'] ?? s['data_sessao'] ?? '')
+                  .toString(),
+            )
+            .where((d) => d.length >= 10)
+            .map((d) => d.substring(0, 10))
+            .toSet();
+        if (mounted) setState(() => _diasAtivos = datas.length);
+      }
+    } catch (_) {}
   }
 
   Future<void> carregarImagem() async {
@@ -544,6 +616,21 @@ class _HomePageState extends State<HomePage> {
                       letterSpacing: 0.2,
                     ),
                     overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Icon(_iconNivel, color: _corNivel, size: 11),
+                      const SizedBox(width: 3),
+                      Text(
+                        '$_nivelAtual · $_diasAtivos dias',
+                        style: TextStyle(
+                          color: _corNivel,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
