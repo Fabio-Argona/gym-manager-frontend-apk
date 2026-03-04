@@ -14,15 +14,23 @@ class RedefinirSenhaPage extends StatefulWidget {
 class _RedefinirSenhaPageState extends State<RedefinirSenhaPage> {
   final _senhaController = TextEditingController();
   final _confirmaSenhaController = TextEditingController();
+  late final TextEditingController _tokenController;
   bool isLoading = false;
   bool senhaRedefinida = false;
   bool mostrarSenha1 = false;
   bool mostrarSenha2 = false;
 
   @override
+  void initState() {
+    super.initState();
+    _tokenController = TextEditingController(text: widget.token);
+  }
+
+  @override
   void dispose() {
     _senhaController.dispose();
     _confirmaSenhaController.dispose();
+    _tokenController.dispose();
     super.dispose();
   }
 
@@ -132,6 +140,36 @@ class _RedefinirSenhaPageState extends State<RedefinirSenhaPage> {
                       ),
                     )
                   else ...[
+                    // Campo de token manual (fallback quando deep link não funcionou)
+                    if (widget.token.isEmpty) ...[
+                      const Text(
+                        'Cole o token recebido no email:',
+                        style: TextStyle(color: Colors.grey, fontSize: 13),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _tokenController,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'Token de recuperação',
+                          prefixIcon: const Icon(
+                            Icons.vpn_key,
+                            color: Colors.amber,
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[900],
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          labelStyle: const TextStyle(color: Colors.white),
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                     TextFormField(
                       controller: _senhaController,
                       obscureText: !mostrarSenha1,
@@ -235,13 +273,15 @@ class _RedefinirSenhaPageState extends State<RedefinirSenhaPage> {
                             onPressed:
                                 (_senhaValida() &&
                                     _senhasIguais() &&
+                                    _tokenController.text.trim().isNotEmpty &&
                                     !isLoading)
                                 ? () async {
                                     setState(() => isLoading = true);
                                     try {
                                       final success = await authService
                                           .resetPassword(
-                                            widget.token,
+                                            '',
+                                            _tokenController.text.trim(),
                                             _senhaController.text.trim(),
                                           );
 

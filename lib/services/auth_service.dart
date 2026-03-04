@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/date_utils.dart' as meu_date_utils;
@@ -92,28 +93,6 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // ATUALIZAR NOME
-  Future<bool> atualizarNome(String novoNome, String alunoId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-
-    final response = await http.put(
-      Uri.parse('$endpointAlunos/$alunoId/nome'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({'nome': novoNome}),
-    );
-
-    if (response.statusCode == 200) {
-      await prefs.setString('nome', novoNome);
-      return true;
-    }
-
-    return false;
-  }
-
   // ATUALIZAR PERFIL COMPLETO
   Future<bool> atualizarPerfil({
     required String alunoId,
@@ -150,15 +129,11 @@ class AuthService extends ChangeNotifier {
     return false;
   }
 
-  // ATUALIZAR DADOS FÍSICOS
+  // ATUALIZAR DADOS FÍSICOS ESTÁTICOS (sexo e altura)
   Future<bool> atualizarFisico({
     required String alunoId,
     required String sexo,
-    required String peso,
     required String altura,
-    required String gordura,
-    required String musculo,
-    required String imc,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
@@ -169,57 +144,69 @@ class AuthService extends ChangeNotifier {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode({
-        'sexo': sexo,
-        'pesoAtual': double.tryParse(peso),
-        'altura': double.tryParse(altura),
-        'percentualGordura': double.tryParse(gordura),
-        'percentualMusculo': double.tryParse(musculo),
-        'imc': double.tryParse(imc),
-      }),
+      body: jsonEncode({'sexo': sexo, 'altura': double.tryParse(altura)}),
     );
 
     return response.statusCode == 200;
   }
 
-  // ATUALIZAR MEDIDAS CORPORAIS
-  Future<bool> atualizarMedidas({
+  // SALVAR / ATUALIZAR AVALIAÇÃO FÍSICA COMPLETA (evolucoes)
+  Future<bool> salvarMedidas({
     required String alunoId,
+    String? evolucaoId,
+    required String peso,
+    required String altura,
+    required String gordura,
+    required String musculo,
     required String cintura,
+    required String abdomen,
     required String quadril,
     required String peito,
-    required String ombro,
     required String bracoDireito,
     required String bracoEsquerdo,
     required String coxaDireita,
     required String coxaEsquerda,
-    required String panturrilhaDireita,
-    required String panturrilhaEsquerda,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
-    final response = await http.put(
-      Uri.parse('$endpointAlunos/$alunoId/medidas'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'cintura': double.tryParse(cintura),
-        'quadril': double.tryParse(quadril),
-        'peito': double.tryParse(peito),
-        'ombro': double.tryParse(ombro),
-        'bracoDireito': double.tryParse(bracoDireito),
-        'bracoEsquerdo': double.tryParse(bracoEsquerdo),
-        'coxaDireita': double.tryParse(coxaDireita),
-        'coxaEsquerda': double.tryParse(coxaEsquerda),
-        'panturrilhaDireita': double.tryParse(panturrilhaDireita),
-        'panturrilhaEsquerda': double.tryParse(panturrilhaEsquerda),
-      }),
-    );
+    final body = jsonEncode({
+      'alunoId': alunoId,
+      'peso': double.tryParse(peso),
+      'altura': double.tryParse(altura),
+      'percentualGordura': double.tryParse(gordura),
+      'percentualMusculo': double.tryParse(musculo),
+      'cintura': double.tryParse(cintura),
+      'abdomen': double.tryParse(abdomen),
+      'quadril': double.tryParse(quadril),
+      'peito': double.tryParse(peito),
+      'bracoDireito': double.tryParse(bracoDireito),
+      'bracoEsquerdo': double.tryParse(bracoEsquerdo),
+      'coxaDireita': double.tryParse(coxaDireita),
+      'coxaEsquerda': double.tryParse(coxaEsquerda),
+    });
 
-    return response.statusCode == 200;
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
+    final http.Response response;
+    if (evolucaoId != null && evolucaoId.isNotEmpty) {
+      response = await http.put(
+        Uri.parse('$baseUrl/evolucoes/$evolucaoId'),
+        headers: headers,
+        body: body,
+      );
+    } else {
+      response = await http.post(
+        Uri.parse('$baseUrl/evolucoes'),
+        headers: headers,
+        body: body,
+      );
+    }
+
+    return response.statusCode == 200 || response.statusCode == 201;
   }
 
   // ATUALIZAR OBJETIVO
@@ -267,48 +254,24 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // RECUPERAÇÃO DE SENHA
-  Future<bool> requestPasswordReset(String email, {String? cpf}) async {
+  // RECUPERAÇÃO DE SENHA — valida email + 6 primeiros dígitos do CPF + redefine
+  Future<bool> resetPassword(
+    String email,
+    String cpf6,
+    String novaSenha,
+  ) async {
     try {
-      print('Enviando solicitação de recuperação para email: $email');
-
-      final response = await http.post(
-        Uri.parse(endpointRecuperarSenha),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email}),
-      );
-
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return true;
-      } else {
-        final erro = _extrairMensagemErro(response);
-        throw Exception(erro);
-      }
-    } catch (e) {
-      throw Exception(
-        'Erro ao solicitar redefinição: ${e.toString().replaceAll('Exception: ', '')}',
-      );
-    }
-  }
-
-  // REDEFINIR SENHA COM TOKEN
-  Future<bool> resetPassword(String token, String novaSenha) async {
-    try {
-      print('Redefinindo senha com token: $token');
-
       final response = await http.post(
         Uri.parse(endpointResetarSenha),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'token': token, 'novaSenha': novaSenha}),
+        body: jsonEncode({
+          'email': email.trim().toLowerCase(),
+          'cpf6': cpf6.replaceAll(RegExp(r'[^0-9]'), ''),
+          'novaSenha': novaSenha,
+        }),
       );
 
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.statusCode == 200) {
         return true;
       } else {
         final erro = _extrairMensagemErro(response);
@@ -321,9 +284,49 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  // VERIFICA SE BIOMETRIA ESTÁ DISPONÍVEL NA PLATAFORMA
+  Future<bool> isBiometricsAvailable() async {
+    try {
+      if (const bool.fromEnvironment(
+        'dart.library.js_util',
+        defaultValue: false,
+      )) {
+        return false; // web
+      }
+      final bool canCheck = await _localAuth.canCheckBiometrics;
+      final bool isSupported = await _localAuth.isDeviceSupported();
+      if (!canCheck || !isSupported) return false;
+      final List<BiometricType> available = await _localAuth
+          .getAvailableBiometrics();
+      return available.isNotEmpty;
+    } on MissingPluginException {
+      return false;
+    } on PlatformException {
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // AUTENTICAÇÃO BIOMÉTRICA
   Future<bool> authenticateWithBiometrics() async {
     try {
+      // Verifica se a plataforma suporta biometria
+      final bool canCheck = await _localAuth.canCheckBiometrics;
+      final bool isSupported = await _localAuth.isDeviceSupported();
+
+      if (!canCheck || !isSupported) {
+        print('Biometria não suportada neste dispositivo/plataforma.');
+        return false;
+      }
+
+      final List<BiometricType> available = await _localAuth
+          .getAvailableBiometrics();
+      if (available.isEmpty) {
+        print('Nenhuma biometria cadastrada no dispositivo.');
+        return false;
+      }
+
       bool authenticated = await _localAuth.authenticate(
         localizedReason: 'Por favor, autentique-se para continuar.',
         options: const AuthenticationOptions(
@@ -333,6 +336,12 @@ class AuthService extends ChangeNotifier {
         ),
       );
       return authenticated;
+    } on MissingPluginException {
+      print('Biometria não disponível nesta plataforma (plugin ausente).');
+      return false;
+    } on PlatformException catch (e) {
+      print('Erro de plataforma na biometria: ${e.message}');
+      return false;
     } catch (e) {
       print('Erro na autenticação biométrica: $e');
       return false;

@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 // ignore: depend_on_referenced_packages
 import 'package:http_parser/http_parser.dart';
 import '../constants/constants.dart';
+import '../main.dart';
 
 class TreinoService {
   // 🔍 Lista os grupos do aluno
@@ -15,7 +16,9 @@ class TreinoService {
     final alunoId = prefs.getString('alunoId') ?? '';
 
     if (token.isEmpty || alunoId.isEmpty) {
-      throw Exception('Credenciais inválidas');
+      throw Exception(
+        'Credenciais inv\u00e1lidas (token: ${token.isEmpty ? "vazio" : "ok"}, alunoId: ${alunoId.isEmpty ? "vazio" : alunoId})',
+      );
     }
 
     final response = await http.get(
@@ -24,10 +27,19 @@ class TreinoService {
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> grupos = jsonDecode(response.body);
-      return grupos.cast<Map<String, dynamic>>();
+      final List<dynamic> raw = jsonDecode(utf8.decode(response.bodyBytes));
+      return raw.map((e) {
+        final m = Map<String, dynamic>.from(e as Map);
+        m['id'] = m['id']?.toString();
+        return m;
+      }).toList();
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      await handleUnauthorized();
+      throw Exception('Sess\u00e3o expirada. Fa\u00e7a login novamente.');
     } else {
-      throw Exception('Erro ao buscar grupos: ${response.body}');
+      throw Exception(
+        'HTTP ${response.statusCode} - ${utf8.decode(response.bodyBytes)}',
+      );
     }
   }
 
@@ -53,7 +65,9 @@ class TreinoService {
       throw Exception('Erro ao criar grupo: ${response.body}');
     }
 
-    return jsonDecode(response.body);
+    final m = Map<String, dynamic>.from(jsonDecode(response.body) as Map);
+    m['id'] = m['id']?.toString();
+    return m;
   }
 
   // ✏️ Edita o nome de um grupo

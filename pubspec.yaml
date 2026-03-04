@@ -37,6 +37,9 @@ dependencies:
 
   # Autenticação por impressão digital
   local_auth: ^2.1.0
+
+  # Deep links (recuperação de senha via email)
+  app_links: ^6.3.3
   
 dev_dependencies:
   flutter_test:

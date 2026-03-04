@@ -2,9 +2,25 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_treinoabc/dto/AlunoDTO.dart';
 import 'package:flutter_application_treinoabc/services/auth_service.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../constants/constants.dart';
+
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const _bg1 = Color(0xFF0D0D1A);
+const _bg2 = Color(0xFF1A1040);
+const _card = Color(0xFF1C1B2E);
+const _primary = Color(0xFF7C3AED);
+const _primaryDark = Color(0xFF5B21B6);
+const _accent = Color(0xFF06B6D4);
+const _success = Color(0xFF10B981);
+const _error = Color(0xFFEF4444);
+const _warning = Color(0xFFF59E0B);
+const _inputBg = Color(0xFF252438);
+const _border = Color(0xFF3A3857);
+const _textHint = Color(0xFF8884A8);
+const _textSub = Color(0xFFB0ADCC);
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -28,16 +44,37 @@ class _ProfilePageState extends State<ProfilePage>
   late TextEditingController alturaController;
   late TextEditingController gorduraController;
   late TextEditingController musculoController;
-  late TextEditingController imcController;
   late TextEditingController objetivoController;
   late TextEditingController nivelController;
 
+  // Controllers de medidas
+  final cinturaController = TextEditingController();
+  final abdomenController = TextEditingController();
+  final quadrilController = TextEditingController();
+  final peitoController = TextEditingController();
+  final bracoDirController = TextEditingController();
+  final bracoEsqController = TextEditingController();
+  final coxaDirController = TextEditingController();
+  final coxaEsqController = TextEditingController();
+
+  String? _evolucaoId; // ID da evoção existente (para PUT)
+
   String sexoSelecionado = 'Masculino';
+
+  final telefoneMask = MaskTextInputFormatter(
+    mask: '(##)#####-####',
+    filter: {'#': RegExp(r'[0-9]')},
+  );
+
+  final dataMask = MaskTextInputFormatter(
+    mask: '##/##/####',
+    filter: {'#': RegExp(r'[0-9]')},
+  );
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _carregarAluno();
   }
 
@@ -51,21 +88,66 @@ class _ProfilePageState extends State<ProfilePage>
       return;
     }
 
-    final response = await http.get(
-      Uri.parse('$endpointAlunos/$alunoId'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
+    final headers = {'Authorization': 'Bearer $token'};
 
-    if (response.statusCode == 200) {
-      final json = jsonDecode(response.body);
-      setState(() {
-        aluno = AlunoDTO.fromJson(json);
-        _inicializarControllers();
-        carregando = false;
-      });
+    final responses = await Future.wait([
+      http.get(Uri.parse('$endpointAlunos/$alunoId'), headers: headers),
+      http.get(
+        Uri.parse('${baseUrl}/evolucoes/aluno/$alunoId'),
+        headers: headers,
+      ),
+    ]);
+
+    if (responses[0].statusCode == 200) {
+      try {
+        final json = jsonDecode(responses[0].body);
+        setState(() {
+          aluno = AlunoDTO.fromJson(json);
+          _inicializarControllers();
+          carregando = false;
+        });
+      } catch (_) {
+        setState(() => carregando = false);
+      }
     } else {
       setState(() => carregando = false);
-      print('Erro ao carregar aluno: ${response.body}');
+    }
+
+    // Carrega medidas se existir
+    if (responses[1].statusCode == 200) {
+      try {
+        final lista = jsonDecode(responses[1].body) as List;
+        if (lista.isNotEmpty) {
+          final m = lista.last as Map<String, dynamic>;
+          _evolucaoId = m['id']?.toString();
+          // Só sobrescreve se o valor da evolução for não-nulo
+          // (registros antigos podem não ter peso/gordura/músculo)
+          if (m['peso'] != null) pesoController.text = m['peso'].toString();
+          if (m['altura'] != null)
+            alturaController.text = m['altura'].toString();
+          if (m['percentualGordura'] != null)
+            gorduraController.text = m['percentualGordura'].toString();
+          if (m['percentualMusculo'] != null)
+            musculoController.text = m['percentualMusculo'].toString();
+          if (m['cintura'] != null)
+            cinturaController.text = m['cintura'].toString();
+          if (m['abdomen'] != null)
+            abdomenController.text = m['abdomen'].toString();
+          if (m['quadril'] != null)
+            quadrilController.text = m['quadril'].toString();
+          if (m['peito'] != null) peitoController.text = m['peito'].toString();
+          if (m['bracoDireito'] != null)
+            bracoDirController.text = m['bracoDireito'].toString();
+          if (m['bracoEsquerdo'] != null)
+            bracoEsqController.text = m['bracoEsquerdo'].toString();
+          if (m['coxaDireita'] != null)
+            coxaDirController.text = m['coxaDireita'].toString();
+          if (m['coxaEsquerda'] != null)
+            coxaEsqController.text = m['coxaEsquerda'].toString();
+        }
+      } catch (_) {
+        // resposta inválida, ignora
+      }
     }
   }
 
@@ -73,96 +155,161 @@ class _ProfilePageState extends State<ProfilePage>
     nomeController = TextEditingController(text: aluno?.nome ?? '');
     emailController = TextEditingController(text: aluno?.email ?? '');
     telefoneController = TextEditingController(text: aluno?.telefone ?? '');
-    dataController = TextEditingController(text: aluno?.dataNascimento ?? '');
+    telefoneMask.formatEditUpdate(
+      TextEditingValue.empty,
+      TextEditingValue(text: aluno?.telefone ?? ''),
+    );
+    final rawData = aluno?.dataNascimento ?? '';
+    // Converte yyyy-MM-dd → dd/MM/yyyy se necessário
+    String dataFormatada = rawData;
+    if (rawData.contains('-') && rawData.length == 10) {
+      final parts = rawData.split('-');
+      dataFormatada = '${parts[2]}/${parts[1]}/${parts[0]}';
+    }
+    dataController = TextEditingController(text: dataFormatada);
     pesoController = TextEditingController(
-      text: aluno?.pesoAtual.toString() ?? '',
+      text: aluno?.pesoAtual != null ? aluno!.pesoAtual.toString() : '',
     );
     alturaController = TextEditingController(
-      text: aluno?.altura.toString() ?? '',
+      text: aluno?.altura != null ? aluno!.altura.toString() : '',
     );
     gorduraController = TextEditingController(
-      text: aluno?.percentualGordura.toString() ?? '',
+      text: aluno?.percentualGordura != null
+          ? aluno!.percentualGordura.toString()
+          : '',
     );
     musculoController = TextEditingController(
-      text: aluno?.percentualMusculo.toString() ?? '',
+      text: aluno?.percentualMusculo != null
+          ? aluno!.percentualMusculo.toString()
+          : '',
     );
-    imcController = TextEditingController(text: aluno?.imc.toString() ?? '');
     objetivoController = TextEditingController(text: aluno?.objetivo ?? '');
     nivelController = TextEditingController(
       text: aluno?.nivelTreinamento ?? '',
     );
     sexoSelecionado = aluno?.sexo ?? 'Masculino';
+
+    // Recalcula IMC dinamicamente ao alterar peso ou altura
+    pesoController.addListener(() => setState(() {}));
+    alturaController.addListener(() => setState(() {}));
   }
 
   @override
   Widget build(BuildContext context) {
     if (carregando) {
-      return const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(child: CircularProgressIndicator()),
+      return Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [_bg1, _bg2],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: const Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Center(child: CircularProgressIndicator(color: _primary)),
+        ),
       );
     }
 
     if (aluno == null) {
-      return const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(child: Text('Aluno não encontrado')),
+      return Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [_bg1, _bg2],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: const Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Center(
+            child: Text(
+              'Aluno não encontrado',
+              style: TextStyle(color: _textSub),
+            ),
+          ),
+        ),
       );
     }
 
-    return Stack(
-      children: [
-        // Imagem de fundo
-        SizedBox.expand(
-          child: Image.asset(
-            'assets/images/Copilot_20251029_183912.png',
-            fit: BoxFit.cover,
-          ),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_bg1, _bg2],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        // Conteúdo
-        Scaffold(
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
           backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            backgroundColor: Colors.black54,
-            elevation: 0,
-            title: const Text(
-              'Meu Perfil',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-                fontFamily: 'Poppins',
+          elevation: 0,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [_bg2, _bg1.withOpacity(0.85)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
-            ),
-            centerTitle: true,
-            bottom: TabBar(
-              controller: _tabController,
-              indicatorColor: Colors.amber,
-              labelColor: Colors.amber,
-              unselectedLabelColor: Colors.white70,
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Poppins',
-              ),
-              tabs: const [
-                Tab(text: 'Pessoais'),
-                Tab(text: 'Físico'),
-                Tab(text: 'Medidas'),
-                Tab(text: 'Objetivo'),
-              ],
             ),
           ),
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildPessoaisForm(),
-              _buildFisicoForm(),
-              _buildMedidasForm(),
-              _buildObjetivoForm(),
-            ],
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
+          ),
+          title: const Text(
+            'Meu Perfil',
+            style: TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          centerTitle: true,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(48),
+            child: Container(
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: _border, width: 1)),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicatorColor: _accent,
+                indicatorWeight: 2.5,
+                labelColor: _accent,
+                unselectedLabelColor: _textHint,
+                labelStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.w400,
+                  fontSize: 13,
+                ),
+                tabs: const [
+                  Tab(text: 'Pessoais'),
+                  Tab(text: 'Avaliação'),
+                  Tab(text: 'Objetivo'),
+                ],
+              ),
+            ),
           ),
         ),
-      ],
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildPessoaisForm(),
+            _buildAvaliacaoForm(),
+            _buildObjetivoForm(),
+          ],
+        ),
+      ),
     );
   }
 
@@ -171,61 +318,231 @@ class _ProfilePageState extends State<ProfilePage>
   Widget _buildPessoaisForm() {
     return _buildForm(
       [
-        _buildEditableField('Nome', nomeController),
-        _buildEditableField('Email', emailController),
-        _buildEditableField('Telefone', telefoneController),
-        _buildEditableField('Data Nascimento', dataController),
+        _buildEditableField(
+          'Nome',
+          nomeController,
+          icon: Icons.person_outline_rounded,
+        ),
+        _buildEditableField(
+          'Email',
+          emailController,
+          icon: Icons.email_outlined,
+        ),
+        _buildEditableField(
+          'Telefone',
+          telefoneController,
+          icon: Icons.phone_outlined,
+          mask: telefoneMask,
+        ),
+        _buildEditableField(
+          'Data Nascimento',
+          dataController,
+          icon: Icons.cake_outlined,
+          mask: dataMask,
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: DropdownButtonFormField<String>(
+            value: sexoSelecionado.isEmpty ? 'Masculino' : sexoSelecionado,
+            items: const [
+              DropdownMenuItem(
+                value: 'Masculino',
+                child: Text('Masculino', style: TextStyle(color: Colors.white)),
+              ),
+              DropdownMenuItem(
+                value: 'Feminino',
+                child: Text('Feminino', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+            onChanged: (v) =>
+                setState(() => sexoSelecionado = v ?? 'Masculino'),
+            dropdownColor: _inputBg,
+            style: const TextStyle(color: Colors.white),
+            decoration: _inputDecoration('Sexo', Icons.wc_rounded),
+          ),
+        ),
       ],
       onSave: () async {
-        final sucesso = await AuthService().atualizarPerfil(
+        final dataRaw = dataController.text.trim();
+        String dataBackend = dataRaw;
+        if (dataRaw.contains('/') && dataRaw.length == 10) {
+          final parts = dataRaw.split('/');
+          dataBackend = '${parts[2]}-${parts[1]}-${parts[0]}';
+        }
+        final r1 = await AuthService().atualizarPerfil(
           alunoId: aluno?.id ?? '',
           nome: nomeController.text.trim(),
           telefone: telefoneController.text.trim(),
-          data_nascimento: dataController.text.trim(),
+          data_nascimento: dataBackend,
         );
-        _showResult(sucesso);
+        final r2 = await AuthService().atualizarFisico(
+          alunoId: aluno?.id ?? '',
+          sexo: sexoSelecionado,
+          altura: alturaController.text.trim().isEmpty
+              ? '0'
+              : alturaController.text.trim(),
+        );
+        _showResult(r1 && r2);
+        if (r1 && r2) await _carregarAluno();
       },
     );
   }
 
-  Widget _buildFisicoForm() {
+  Widget _buildAvaliacaoForm() {
     return _buildForm(
       [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: DropdownButtonFormField<String>(
-            initialValue: (sexoSelecionado.isEmpty)
-                ? 'Masculino'
-                : sexoSelecionado,
-            items: const [
-              DropdownMenuItem(value: 'Masculino', child: Text('Masculino')),
-              DropdownMenuItem(value: 'Feminino', child: Text('Feminino')),
-            ],
-            onChanged: (v) =>
-                setState(() => sexoSelecionado = v ?? 'Masculino'),
-            dropdownColor: Colors.grey[900],
-            style: const TextStyle(color: Colors.white, fontFamily: 'Poppins'),
-            decoration: _inputDecoration('Sexo'),
-          ),
+        _buildEditableField(
+          'Peso Atual (kg)',
+          pesoController,
+          icon: Icons.monitor_weight_outlined,
+          number: true,
         ),
-        _buildEditableField('Peso Atual (kg)', pesoController, number: true),
-        _buildEditableField('Altura (m)', alturaController, number: true),
+        _buildEditableField(
+          'Altura (cm)',
+          alturaController,
+          icon: Icons.height_rounded,
+          number: true,
+        ),
         _buildEditableField(
           'Percentual Gordura (%)',
           gorduraController,
+          icon: Icons.water_drop_outlined,
           number: true,
         ),
         _buildEditableField(
           'Percentual Músculo (%)',
           musculoController,
+          icon: Icons.fitness_center_rounded,
           number: true,
         ),
-        _buildEditableField('IMC', imcController, number: true),
+        Builder(
+          builder: (context) {
+            final peso =
+                double.tryParse(pesoController.text.replaceAll(',', '.')) ?? 0;
+            double alt =
+                double.tryParse(alturaController.text.replaceAll(',', '.')) ??
+                0;
+            if (alt > 3) alt = alt / 100;
+            final imcValor = (peso > 0 && alt > 0) ? peso / (alt * alt) : 0.0;
+            final imcTexto = imcValor > 0 ? imcValor.toStringAsFixed(2) : '-';
+            String classificacao = '';
+            Color imcCor = _textHint;
+            if (imcValor > 0) {
+              if (imcValor < 18.5) {
+                classificacao = 'Abaixo do peso';
+                imcCor = _accent;
+              } else if (imcValor < 25) {
+                classificacao = 'Normal';
+                imcCor = _success;
+              } else if (imcValor < 30) {
+                classificacao = 'Sobrepeso';
+                imcCor = _warning;
+              } else if (imcValor < 35) {
+                classificacao = 'Obesidade grau I';
+                imcCor = _error;
+              } else if (imcValor < 40) {
+                classificacao = 'Obesidade grau II';
+                imcCor = _error;
+              } else {
+                classificacao = 'Obesidade mórbida';
+                imcCor = _error;
+              }
+            }
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: InputDecorator(
+                decoration: _inputDecoration(
+                  'IMC (calculado)',
+                  Icons.calculate_outlined,
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      imcTexto,
+                      style: TextStyle(
+                        color: imcCor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (classificacao.isNotEmpty) ...[
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: imcCor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: imcCor.withOpacity(0.5)),
+                        ),
+                        child: Text(
+                          classificacao,
+                          style: TextStyle(color: imcCor, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+        Divider(color: _border.withOpacity(0.6), height: 32, thickness: 0.8),
+        _buildEditableField(
+          'Cintura (cm)',
+          cinturaController,
+          icon: Icons.straighten_rounded,
+          number: true,
+        ),
+        _buildEditableField(
+          'Abdômen (cm)',
+          abdomenController,
+          icon: Icons.straighten_rounded,
+          number: true,
+        ),
+        _buildEditableField(
+          'Quadril (cm)',
+          quadrilController,
+          icon: Icons.straighten_rounded,
+          number: true,
+        ),
+        _buildEditableField(
+          'Peito (cm)',
+          peitoController,
+          icon: Icons.straighten_rounded,
+          number: true,
+        ),
+        _buildEditableField(
+          'Braço Direito (cm)',
+          bracoDirController,
+          icon: Icons.straighten_rounded,
+          number: true,
+        ),
+        _buildEditableField(
+          'Braço Esquerdo (cm)',
+          bracoEsqController,
+          icon: Icons.straighten_rounded,
+          number: true,
+        ),
+        _buildEditableField(
+          'Coxa Direita (cm)',
+          coxaDirController,
+          icon: Icons.straighten_rounded,
+          number: true,
+        ),
+        _buildEditableField(
+          'Coxa Esquerda (cm)',
+          coxaEsqController,
+          icon: Icons.straighten_rounded,
+          number: true,
+        ),
       ],
       onSave: () async {
-        final sucesso = await AuthService().atualizarFisico(
+        final sucesso = await AuthService().salvarMedidas(
           alunoId: aluno?.id ?? '',
-          sexo: sexoSelecionado,
+          evolucaoId: _evolucaoId,
           peso: pesoController.text.trim().isEmpty
               ? '0'
               : pesoController.text.trim(),
@@ -238,68 +555,17 @@ class _ProfilePageState extends State<ProfilePage>
           musculo: musculoController.text.trim().isEmpty
               ? '0'
               : musculoController.text.trim(),
-          imc: imcController.text.trim().isEmpty
-              ? '0'
-              : imcController.text.trim(),
+          cintura: cinturaController.text.trim(),
+          abdomen: abdomenController.text.trim(),
+          quadril: quadrilController.text.trim(),
+          peito: peitoController.text.trim(),
+          bracoDireito: bracoDirController.text.trim(),
+          bracoEsquerdo: bracoEsqController.text.trim(),
+          coxaDireita: coxaDirController.text.trim(),
+          coxaEsquerda: coxaEsqController.text.trim(),
         );
         _showResult(sucesso);
-      },
-    );
-  }
-
-  Widget _buildMedidasForm() {
-    return _buildForm(
-      [
-        _buildEditableField('Cintura', TextEditingController(), number: true),
-        _buildEditableField('Quadril', TextEditingController(), number: true),
-        _buildEditableField('Peito', TextEditingController(), number: true),
-        _buildEditableField('Ombro', TextEditingController(), number: true),
-        _buildEditableField(
-          'Braço Direito',
-          TextEditingController(),
-          number: true,
-        ),
-        _buildEditableField(
-          'Braço Esquerdo',
-          TextEditingController(),
-          number: true,
-        ),
-        _buildEditableField(
-          'Coxa Direita',
-          TextEditingController(),
-          number: true,
-        ),
-        _buildEditableField(
-          'Coxa Esquerda',
-          TextEditingController(),
-          number: true,
-        ),
-        _buildEditableField(
-          'Panturrilha Direita',
-          TextEditingController(),
-          number: true,
-        ),
-        _buildEditableField(
-          'Panturrilha Esquerda',
-          TextEditingController(),
-          number: true,
-        ),
-      ],
-      onSave: () async {
-        final sucesso = await AuthService().atualizarMedidas(
-          alunoId: aluno?.id ?? '',
-          cintura: '...',
-          quadril: '...',
-          peito: '...',
-          ombro: '...',
-          bracoDireito: '...',
-          bracoEsquerdo: '...',
-          coxaDireita: '...',
-          coxaEsquerda: '...',
-          panturrilhaDireita: '...',
-          panturrilhaEsquerda: '...',
-        );
-        _showResult(sucesso);
+        if (sucesso) await _carregarAluno();
       },
     );
   }
@@ -307,8 +573,16 @@ class _ProfilePageState extends State<ProfilePage>
   Widget _buildObjetivoForm() {
     return _buildForm(
       [
-        _buildEditableField('Objetivo', objetivoController),
-        _buildEditableField('Nível Treinamento', nivelController),
+        _buildEditableField(
+          'Objetivo',
+          objetivoController,
+          icon: Icons.flag_outlined,
+        ),
+        _buildEditableField(
+          'Nível Treinamento',
+          nivelController,
+          icon: Icons.trending_up_rounded,
+        ),
       ],
       onSave: () async {
         final sucesso = await AuthService().atualizarObjetivo(
@@ -325,76 +599,70 @@ class _ProfilePageState extends State<ProfilePage>
 
   Widget _buildForm(List<Widget> fields, {required VoidCallback onSave}) {
     return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        child: Column(
-          children: [
-            // Card com os campos
-            Card(
-              elevation: 0,
-              color: Colors.grey[900],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: Colors.grey[800]!, width: 1),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(children: fields),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      child: Column(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: _card,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: _border.withOpacity(0.7), width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.25),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(20),
+            child: Column(children: fields),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.save_rounded, size: 20),
+              label: const Text('Salvar alterações'),
+              onPressed: onSave,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _accent,
+                side: const BorderSide(color: _border, width: 1.2),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
               ),
             ),
-            const SizedBox(height: 24),
-            // Botão Salvar
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.save_rounded, size: 20),
-                label: const Text(
-                  'Salvar alterações',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurpleAccent,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 2,
-                ),
-                onPressed: onSave,
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
+          ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }
 
-  InputDecoration _inputDecoration(String label) {
+  InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(
-        color: Colors.grey[400],
-        fontFamily: 'Poppins',
-        fontSize: 13,
-      ),
+      labelStyle: const TextStyle(color: _textHint, fontSize: 13),
+      prefixIcon: Icon(icon, color: _textHint, size: 20),
       filled: true,
-      fillColor: Colors.grey[850],
+      fillColor: _inputBg,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[700]!, width: 1),
+        borderSide: const BorderSide(color: _border, width: 1.2),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey[700]!, width: 1),
+        borderSide: const BorderSide(color: _border, width: 1.2),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.amber, width: 2),
+        borderSide: const BorderSide(color: _primary, width: 1.8),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
@@ -403,29 +671,65 @@ class _ProfilePageState extends State<ProfilePage>
   Widget _buildEditableField(
     String label,
     TextEditingController controller, {
+    required IconData icon,
     bool number = false,
+    MaskTextInputFormatter? mask,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: TextFormField(
         controller: controller,
-        style: const TextStyle(color: Colors.white, fontFamily: 'Poppins'),
-        keyboardType: number ? TextInputType.number : TextInputType.text,
-        decoration: _inputDecoration(label),
+        style: const TextStyle(color: Colors.white, fontSize: 15),
+        cursorColor: _primary,
+        keyboardType: number
+            ? const TextInputType.numberWithOptions(decimal: true)
+            : TextInputType.text,
+        inputFormatters: mask != null ? [mask] : [],
+        decoration: _inputDecoration(label, icon),
       ),
     );
   }
 
   void _showResult(bool sucesso) {
+    final color = sucesso ? _success : _error;
+    final icon = sucesso
+        ? Icons.check_circle_outline_rounded
+        : Icons.error_outline_rounded;
+    final msg = sucesso
+        ? 'Dados atualizados com sucesso!'
+        : 'Erro ao atualizar';
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          sucesso ? 'Dados atualizados com sucesso!' : 'Erro ao atualizar',
-          style: const TextStyle(fontFamily: 'Poppins'),
-        ),
-        backgroundColor: sucesso ? Colors.green : Colors.redAccent,
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        duration: const Duration(seconds: 2),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        content: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            border: Border.all(color: color.withOpacity(0.5)),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  msg,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

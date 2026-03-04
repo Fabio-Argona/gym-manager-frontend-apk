@@ -4,7 +4,14 @@ import 'services/auth_service.dart';
 import 'pages/page_login.dart';
 import 'pages/home_page.dart';
 import 'pages/recuperar_senha_page.dart';
-import 'pages/redefinir_senha_page.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+Future<void> handleUnauthorized() async {
+  final authService = AuthService();
+  await authService.logout();
+  navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (_) => false);
+}
 
 void main() {
   runApp(
@@ -21,7 +28,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Full Performance',
+      title: 'Old School Gym Manager',
       theme: ThemeData(
         brightness: Brightness.dark,
         fontFamily: 'Poppins',
@@ -39,6 +46,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       debugShowCheckedModeBanner: false,
+      navigatorKey: navigatorKey,
       initialRoute: '/login',
       onGenerateRoute: (settings) {
         switch (settings.name) {
@@ -49,9 +57,6 @@ class MyApp extends StatelessWidget {
             return _criarRotaAnimada(HomePage(nome: nome));
           case '/recuperar':
             return _criarRotaAnimada(const RecuperarSenhaPage());
-          case '/redefinir':
-            final token = settings.arguments as String? ?? '';
-            return _criarRotaAnimada(RedefinirSenhaPage(token: token));
           default:
             return _criarRotaAnimada(const LoginPage());
         }

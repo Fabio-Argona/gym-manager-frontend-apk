@@ -6,7 +6,11 @@ import '../constants/constants.dart';
 
 class ExercicioRealizadoService {
   // INICIAR TREINO (criar TreinoRealizado)
-  Future<String?> iniciarTreino(String grupoId, String data) async {
+  Future<String?> iniciarTreino(
+    String grupoId,
+    String data, {
+    String grupoNome = '',
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final alunoId = prefs.getString('alunoId') ?? '';
@@ -14,35 +18,37 @@ class ExercicioRealizadoService {
 
       if (alunoId.isEmpty || token.isEmpty) return null;
 
-      // Tenta o endpoint principal
+      // POST /treinos/realizado/{treinoId}?data=yyyy-MM-dd
+      final uri = Uri.parse(
+        '$endpointTreinosRealizado/$grupoId',
+      ).replace(queryParameters: {'data': data});
+
       final response = await http.post(
-        Uri.parse(endpointTreinosRealizado),
+        uri,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
           'aluno-id': alunoId,
         },
-        body: jsonEncode({
-          'grupoId': grupoId,
-          'dataSessao': data,
-          'alunoId': alunoId,
-        }),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final json = jsonDecode(response.body);
-        return json['id']?.toString();
+        print('Resposta iniciarTreino: ${response.body}');
+        // tenta os campos mais comuns de ID
+        final id =
+            json['id']?.toString() ??
+            json['treinoId']?.toString() ??
+            json['treinoRealizadoId']?.toString() ??
+            json['treino_id']?.toString();
+        return id;
       }
 
       print(
         'Erro ao iniciar treino: ${response.statusCode} - ${response.body}',
       );
 
-      // Se falhar, usa um ID temporário com timestamp
-      // Isso permite que o usuário registre exercícios mesmo sem o TreinoRealizado ser criado
-      final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
-      print('Usando ID temporário: $tempId');
-      return tempId;
+      return null;
     } catch (e) {
       print('Erro ao iniciar treino: $e');
       return null;
@@ -61,25 +67,35 @@ class ExercicioRealizadoService {
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final alunoId = prefs.getString('alunoId') ?? '';
       final token = prefs.getString('token') ?? '';
 
-      if (token.isEmpty) return false;
+      if (alunoId.isEmpty || token.isEmpty) return false;
+
+      final body = {
+        'treino_realizado_id': treinoRealizadoId,
+        'exercicio_id': exercicioId,
+        'aluno_id': alunoId,
+        'series_realizadas': seriesRealizadas,
+        'repeticoes_realizadas': repeticoesRealizadas,
+        'peso_utilizado': pesoUtilizado,
+        'data_sessao': dataSessao,
+        'observacoes': observacoes ?? '',
+      };
+      print('POST exercicios-realizados body: ${jsonEncode(body)}');
 
       final response = await http.post(
         Uri.parse(endpointExerciciosRealizados),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
+          'aluno-id': alunoId,
         },
-        body: jsonEncode({
-          'treinoRealizadoId': treinoRealizadoId,
-          'exercicioId': exercicioId,
-          'seriesRealizadas': seriesRealizadas,
-          'repeticoes_Realizadas': repeticoesRealizadas,
-          'pesoUtilizado': pesoUtilizado,
-          'dataSessao': dataSessao,
-          'observacoes': observacoes ?? '',
-        }),
+        body: jsonEncode(body),
+      );
+
+      print(
+        'Resposta exercicios-realizados: ${response.statusCode} - ${response.body}',
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {

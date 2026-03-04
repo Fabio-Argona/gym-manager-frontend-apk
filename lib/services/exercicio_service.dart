@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/constants.dart';
+import '../main.dart';
 
 class ExercicioService {
   Future<Map<String, String>> _getHeaders({bool includeAlunoId = false}) async {
@@ -83,11 +84,17 @@ class ExercicioService {
       headers: headers,
     );
 
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      await handleUnauthorized();
+      throw Exception('Sess\u00e3o expirada. Fa\u00e7a login novamente.');
+    }
     if (response.statusCode != 200) {
-      throw Exception('Erro ao carregar exercícios');
+      throw Exception(
+        'Erro ao carregar exerc\u00edcios: ${response.statusCode}',
+      );
     }
 
-    final List<dynamic> jsonData = jsonDecode(response.body);
+    final List<dynamic> jsonData = jsonDecode(utf8.decode(response.bodyBytes));
 
     return jsonData
         .map((ex) {
@@ -100,10 +107,10 @@ class ExercicioService {
             }
 
             return {
-              'id': ex['id'],
+              'id': ex['id']?.toString(),
               'nome': ex['nome'],
-              'grupoId': ex['grupo_id'] ?? ex['grupoId'],
-              'grupo_id': ex['grupo_id'],
+              'grupoId': (ex['grupo_id'] ?? ex['grupoId'])?.toString(),
+              'grupo_id': (ex['grupo_id'] ?? ex['grupoId'])?.toString(),
               'grupoMuscular': ex['grupo_muscular'] ?? ex['grupoMuscular'],
               'series': toNumber(ex['series']) ?? 0,
               'repeticoes': toNumber(ex['repeticoes']) ?? 0,
@@ -117,6 +124,7 @@ class ExercicioService {
               'dataCriacao': ex['data_criacao'] ?? ex['dataCriacao'],
               'dataAtualizacao':
                   ex['data_atualizacao'] ?? ex['dataAtualizacao'],
+              'treinoExercicioAlunoId': ex['treino_exercicio_aluno_id']?.toString(),
             };
           }
           return ex;
@@ -133,12 +141,12 @@ class ExercicioService {
       throw Exception('ID do exercício é obrigatório para edição');
     }
 
-    final grupoMuscular = dados['grupoMuscular'] ?? 'Peito';
+    final grupoMuscular = dados['grupoMuscular'] ?? dados['grupo_muscular'];
 
     final body = {
       'nome': dados['nome'],
-      'grupoId': dados['grupoId'] ?? dados['grupo_id'],
-      'grupoMuscular': grupoMuscular,
+      'grupo_id': dados['grupoId'] ?? dados['grupo_id'],
+      'grupo_muscular': grupoMuscular,
       'series': dados['series'],
       'repeticoes': dados['repeticoes'] ?? 0,
       'peso_inicial': dados['pesoInicial'] ?? 0.0,
@@ -218,11 +226,24 @@ class ExercicioService {
 
   Future<bool> atualizarStatus(String id, String status) async {
     final headers = await _getHeaders();
-    final response = await http.patch(
-      Uri.parse('$endpointExercicios/$id/status'),
-      headers: headers,
-      body: jsonEncode({'status': status}),
-    );
-    return response.statusCode == 200;
+    final url = '$endpointTreinoExercicioAluno/$id/status';
+    final body = jsonEncode({'status': status});
+
+    print('PATCH $url');
+    print('Body: $body');
+
+    try {
+      final response = await http.patch(
+        Uri.parse(url),
+        headers: headers,
+        body: body,
+      );
+
+      print('Resposta atualizarStatus: ${response.statusCode} - ${response.body}');
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Erro ao atualizar status: $e');
+      return false;
+    }
   }
 }

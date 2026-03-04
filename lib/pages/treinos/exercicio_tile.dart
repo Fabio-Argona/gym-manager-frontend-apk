@@ -27,7 +27,7 @@ class ExercicioTile extends StatelessWidget {
         style: const TextStyle(color: Colors.grey),
       ),
       trailing: PopupMenuButton<String>(
-        icon: const Icon(Icons.more_vert, color: Colors.redAccent),
+        icon: const Icon(Icons.more_vert, color: Colors.amber),
         itemBuilder: (context) => [
           const PopupMenuItem(value: 'editar', child: Text('Editar')),
           const PopupMenuItem(

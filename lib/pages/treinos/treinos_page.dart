@@ -6,6 +6,22 @@ import 'package:flutter_application_treinoabc/services/treino_service.dart';
 import 'package:flutter_application_treinoabc/services/exercicio_service.dart';
 import 'package:flutter_application_treinoabc/services/exercicio_realizado_service.dart';
 
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const _bg1 = Color(0xFF0D0D1A);
+const _bg2 = Color(0xFF1A1040);
+const _card = Color(0xFF1C1B2E);
+const _cardEx = Color(0xFF201F35);
+const _primary = Color(0xFF7C3AED);
+const _primaryDark = Color(0xFF5B21B6);
+const _accent = Color(0xFF06B6D4);
+const _success = Color(0xFF10B981);
+const _warning = Color(0xFFF59E0B);
+const _error = Color(0xFFEF4444);
+const _inputBg = Color(0xFF252438);
+const _border = Color(0xFF3A3857);
+const _textHint = Color(0xFF8884A8);
+const _textSub = Color(0xFFB0ADCC);
+
 class TreinosPage extends StatefulWidget {
   final String nome;
   const TreinosPage({super.key, required this.nome});
@@ -38,6 +54,8 @@ class _TreinosPageState extends State<TreinosPage> {
   final Map<String, Timer?> _cronometros = {};
 
   final Map<String, DateTime> _ultimaConclusao = {};
+  final Map<String, String> _treinoIdPorGrupo = {};
+  final Map<String, int> _tempoRealPorGrupo = {};
 
   @override
   void initState() {
@@ -75,86 +93,137 @@ class _TreinosPageState extends State<TreinosPage> {
     );
   }
 
-  // Função utilitária para SnackBar
+  // ─── Snackbar padronizado ────────────────────────────────────────────────
   void showCustomSnackBar(
     BuildContext context,
     String mensagem, {
-    Color backgroundColor = Colors.black87,
+    Color? backgroundColor,
+    bool success = false,
+    bool warning = false,
   }) {
+    final isSuccess =
+        success ||
+        (backgroundColor == Colors.greenAccent ||
+            backgroundColor == Colors.green);
+    final isWarning = warning;
+    final color = isSuccess ? _success : (isWarning ? _warning : _error);
+    final icon = isSuccess
+        ? Icons.check_circle_outline_rounded
+        : (isWarning
+              ? Icons.warning_amber_rounded
+              : Icons.error_outline_rounded);
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(mensagem),
-        backgroundColor: backgroundColor,
         behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         duration: const Duration(seconds: 2),
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        content: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            border: Border.all(color: color.withOpacity(0.5)),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  mensagem,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Future<void> _carregarGrupos() async {
-  if (!mounted) return;
-  setState(() => _carregando = true);
-
-  try {
-    final grupos = await _carregarGruposComExercicios();
-
-    const ordemGrupos = [
-      'Peito','Costas','Tríceps','Bíceps','Ombro','Perna','Abdômen','Panturrilha',
-    ];
-    grupos.sort((a, b) {
-      final ia = ordemGrupos.indexOf(a['nome']);
-      final ib = ordemGrupos.indexOf(b['nome']);
-      return (ia == -1 ? 999 : ia).compareTo(ib == -1 ? 999 : ib);
-    });
-
     if (!mounted) return;
-    setState(() {
-      _grupos = grupos;
-      _carregando = false;
-    });
-  } catch (e) {
-    if (!mounted) return;
-    setState(() => _carregando = false);
-    showCustomSnackBar(
-      context,
-      'Erro ao carregar grupos: $e',
-      backgroundColor: Colors.redAccent.shade100,
-    );
+    setState(() => _carregando = true);
+
+    try {
+      final grupos = await _carregarGruposComExercicios();
+
+      const ordemGrupos = [
+        'Peito',
+        'Costas',
+        'Tríceps',
+        'Bíceps',
+        'Ombro',
+        'Perna',
+        'Abdômen',
+        'Panturrilha',
+      ];
+      grupos.sort((a, b) {
+        final ia = ordemGrupos.indexOf(a['nome']);
+        final ib = ordemGrupos.indexOf(b['nome']);
+        return (ia == -1 ? 999 : ia).compareTo(ib == -1 ? 999 : ib);
+      });
+
+      if (!mounted) return;
+      setState(() {
+        _grupos = grupos;
+        _carregando = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _carregando = false);
+      showCustomSnackBar(
+        context,
+        'Erro ao carregar grupos: $e',
+        backgroundColor: Colors.redAccent.shade100,
+      );
+    }
   }
-}
 
   @override
-void dispose() {
-  // Cancela todos os cronômetros ativos
-  for (var timer in _cronometros.values) {
-    timer?.cancel();
+  void dispose() {
+    // Cancela todos os cronômetros ativos
+    for (var timer in _cronometros.values) {
+      timer?.cancel();
+    }
+
+    // Limpa os mapas para evitar referências antigas
+    _cronometros.clear();
+    _tempoExercicio.clear();
+    _exerciciosEmExecucao.clear();
+    _ultimaConclusao.clear();
+
+    super.dispose();
   }
-
-  // Limpa os mapas para evitar referências antigas
-  _cronometros.clear();
-  _tempoExercicio.clear();
-  _exerciciosEmExecucao.clear();
-  _ultimaConclusao.clear();
-
-  super.dispose();
-}
-
 
   Future<List<Map<String, dynamic>>> _carregarGruposComExercicios() async {
     final grupos = await TreinoService().listarGrupos();
-    final exercicios = await ExercicioService().listarExercicios();
+
+    List<Map<String, dynamic>> exercicios = [];
+    try {
+      exercicios = await ExercicioService().listarExercicios();
+    } catch (e) {
+      // Se exercícios falharem, ainda mostra os grupos vazios
+      debugPrint('Aviso: não foi possível carregar exercícios: $e');
+    }
 
     final Map<String, List<Map<String, dynamic>>> exerciciosPorGrupo = {};
     for (var ex in exercicios) {
-      final grupoId = ex['grupoId'] ?? ex['grupo_id'];
+      final grupoId = (ex['grupoId'] ?? ex['grupo_id'])?.toString();
       if (grupoId != null) {
         exerciciosPorGrupo.putIfAbsent(grupoId, () => []).add(ex);
       }
     }
 
     for (var grupo in grupos) {
-      final id = grupo['id'];
+      final id = grupo['id']?.toString();
       var listaExercicios = (exerciciosPorGrupo[id] ?? [])
           .where((ex) => ex['ativo'] == true)
           .toList();
@@ -201,7 +270,7 @@ void dispose() {
           showCustomSnackBar(
             context,
             'Grupo "${novoGrupo['nome']}" criado com sucesso!',
-            backgroundColor: Colors.green,
+            backgroundColor: Colors.greenAccent,
           );
         }
       } catch (e) {
@@ -228,7 +297,7 @@ void dispose() {
         showCustomSnackBar(
           context,
           'Grupo editado com sucesso!',
-          backgroundColor: Colors.greenAccent.shade100,
+          backgroundColor: Colors.greenAccent,
         );
       } catch (e) {
         if (!mounted) return;
@@ -244,21 +313,11 @@ void dispose() {
   Future<void> _excluirGrupo(String id, String nomeGrupo) async {
     final confirmar = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Excluir grupo'),
-        content: Text(
-          'Tem certeza que deseja excluir "$nomeGrupo"? Todos os exercícios serão removidos.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
-          ),
-        ],
+      builder: (context) => _buildConfirmDialog(
+        title: 'Excluir grupo',
+        message: 'Excluir "$nomeGrupo"?\nTodos os exercícios serão removidos.',
+        confirmLabel: 'Excluir',
+        danger: true,
       ),
     );
 
@@ -270,7 +329,7 @@ void dispose() {
           showCustomSnackBar(
             context,
             'Grupo e exercícios excluídos com sucesso',
-            backgroundColor: Colors.green,
+            backgroundColor: Colors.greenAccent,
           );
         }
       } catch (e) {
@@ -290,19 +349,11 @@ void dispose() {
   ) async {
     final confirmar = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Excluir exercício'),
-        content: const Text('Tem certeza que deseja excluir este exercício?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
-          ),
-        ],
+      builder: (context) => _buildConfirmDialog(
+        title: 'Excluir exercício',
+        message: 'Excluir "${exercicio['nome']}"?',
+        confirmLabel: 'Excluir',
+        danger: true,
       ),
     );
 
@@ -322,7 +373,7 @@ void dispose() {
       showCustomSnackBar(
         context,
         'Exercício excluído com sucesso!',
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.greenAccent,
       );
     }
   }
@@ -348,61 +399,17 @@ void dispose() {
 
     final confirmar = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Adicionar Exercício'),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: nomeController,
-                decoration: const InputDecoration(labelText: 'Nome'),
-                autofocus: true,
-                textCapitalization: TextCapitalization.words,
-              ),
-              DropdownButtonFormField<String>(
-                initialValue: grupoSelecionado,
-                decoration: const InputDecoration(labelText: 'Grupo muscular'),
-                items: gruposMusculares
-                    .map((g) => DropdownMenuItem(value: g, child: Text(g)))
-                    .toList(),
-                onChanged: (value) =>
-                    grupoSelecionado = value ?? grupoSelecionado,
-              ),
-              TextField(
-                controller: seriesController,
-                decoration: const InputDecoration(labelText: 'Séries'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: repeticoesController,
-                decoration: const InputDecoration(labelText: 'Repetições'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: pesoController,
-                decoration: const InputDecoration(
-                  labelText: 'Peso inicial (kg)',
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: obsController,
-                decoration: const InputDecoration(labelText: 'Observações'),
-                textCapitalization: TextCapitalization.sentences,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text(' Salvar '),
-          ),
-        ],
+      builder: (context) => _buildExercicioDialog(
+        titulo: 'Adicionar Exercício',
+        nomeController: nomeController,
+        seriesController: seriesController,
+        repeticoesController: repeticoesController,
+        pesoController: pesoController,
+        obsController: obsController,
+        gruposMusculares: gruposMusculares,
+        grupoInicial: grupoSelecionado,
+        onGrupoChanged: (v) => grupoSelecionado = v ?? grupoSelecionado,
+        autofocus: true,
       ),
     );
 
@@ -429,7 +436,7 @@ void dispose() {
         showCustomSnackBar(
           context,
           'Exercício adicionado com sucesso!',
-          backgroundColor: Colors.green,
+          backgroundColor: Colors.greenAccent,
         );
       }
     }
@@ -465,58 +472,16 @@ void dispose() {
 
     final confirmar = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Editar Exercício'),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: nomeController,
-                decoration: const InputDecoration(labelText: 'Nome'),
-              ),
-              DropdownButtonFormField<String>(
-                value: grupoSelecionado,
-                decoration: const InputDecoration(labelText: 'Grupo muscular'),
-                items: gruposMusculares
-                    .map((g) => DropdownMenuItem(value: g, child: Text(g)))
-                    .toList(),
-                onChanged: (value) =>
-                    grupoSelecionado = value ?? grupoSelecionado,
-              ),
-              TextField(
-                controller: seriesController,
-                decoration: const InputDecoration(labelText: 'Séries'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: repeticoesController,
-                decoration: const InputDecoration(labelText: 'Repetições'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: pesoController,
-                decoration: const InputDecoration(
-                  labelText: 'Peso inicial (kg)',
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: obsController,
-                decoration: const InputDecoration(labelText: 'Observações'),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Salvar'),
-          ),
-        ],
+      builder: (context) => _buildExercicioDialog(
+        titulo: 'Editar Exercício',
+        nomeController: nomeController,
+        seriesController: seriesController,
+        repeticoesController: repeticoesController,
+        pesoController: pesoController,
+        obsController: obsController,
+        gruposMusculares: gruposMusculares,
+        grupoInicial: grupoSelecionado,
+        onGrupoChanged: (v) => grupoSelecionado = v ?? grupoSelecionado,
       ),
     );
 
@@ -536,7 +501,7 @@ void dispose() {
       showCustomSnackBar(
         context,
         'Exercício editado com sucesso!',
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.greenAccent,
       );
     }
   }
@@ -545,15 +510,323 @@ void dispose() {
     final controller = TextEditingController(text: nomeInicial);
     return showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          nomeInicial.isEmpty ? 'Criar Grupo' : 'Editar Nome do Grupo',
+      builder: (context) => Dialog(
+        backgroundColor: _card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: _border, width: 1),
         ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(labelText: 'Nome do grupo'),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: _primary.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.fitness_center_rounded,
+                      color: _primary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    nomeInicial.isEmpty ? 'Criar Grupo' : 'Editar Grupo',
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _buildField(
+                controller: controller,
+                label: 'Nome do grupo',
+                icon: Icons.label_outline_rounded,
+                autofocus: true,
+                capitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    style: TextButton.styleFrom(foregroundColor: _textHint),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancelar'),
+                  ),
+                  const SizedBox(width: 8),
+                  _primaryButton(
+                    label: 'Salvar',
+                    onPressed: () => Navigator.pop(context, controller.text),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // INICIAR TREINO
+  Future<String?> _iniciarTreino(String grupoId, String grupoNome) async {
+    final hoje = DateTime.now();
+    final dataFormatada =
+        '${hoje.year}-${hoje.month.toString().padLeft(2, '0')}-${hoje.day.toString().padLeft(2, '0')}';
+
+    final treinoId = await ExercicioRealizadoService().iniciarTreino(
+      grupoId,
+      dataFormatada,
+      grupoNome: grupoNome,
+    );
+
+    if (treinoId != null) {
+      _treinoIdPorGrupo[grupoId] = treinoId;
+      return treinoId;
+    } else {
+      if (mounted) {
+        showCustomSnackBar(
+          context,
+          'Erro ao iniciar treino',
+          backgroundColor: Colors.redAccent.shade100,
+        );
+      }
+      return null;
+    }
+  }
+
+  // EXIBIR DIALOG COM EXERCÍCIOS DO GRUPO
+  void _exibirDialogoExercicios(
+    String grupoId,
+    String grupoNome,
+    String treinoId,
+    String dataFormatada,
+  ) {
+    final grupo = _grupos.firstWhere((g) => g['id'] == grupoId);
+    final exercicios = (grupo['exercicios'] as List)
+        .where((ex) => ex['ativo'] == true)
+        .toList();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Treino: $grupoNome'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            itemCount: exercicios.length,
+            itemBuilder: (context, index) {
+              final ex = exercicios[index];
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                color: Colors.grey[900],
+                child: ListTile(
+                  title: Text(
+                    ex['nome'] ?? '',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    '${ex['series']}x${ex['repeticoes']} - ${(ex['pesoInicial'] ?? 0.0).toStringAsFixed(1)}kg',
+                    style: TextStyle(color: Colors.grey[400]),
+                  ),
+                  trailing: () {
+                    final ultima = _ultimaConclusao[ex['id']];
+                    final hoje = DateTime.now();
+
+                    // Se já foi concluído hoje → botão desabilitado
+                    if (ultima != null &&
+                        ultima.year == hoje.year &&
+                        ultima.month == hoje.month &&
+                        ultima.day == hoje.day) {
+                      return ElevatedButton(
+                        onPressed: null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'Concluído',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      );
+                    }
+
+                    // Se está em execução → mostra botão Encerrar
+                    if (_exerciciosEmExecucao[ex['id']] == true) {
+                      return ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () async {
+                          final confirmar = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Encerrar exercício'),
+                              content: const Text(
+                                'Tem certeza que deseja encerrar este exercício?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text('Cancelar'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text('Encerrar'),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirmar == true) {
+                            await _salvarRegistroExercicio(
+                              ex,
+                              treinoId,
+                              dataFormatada,
+                              TextEditingController(
+                                text: ex['series'].toString(),
+                              ),
+                              TextEditingController(
+                                text: ex['repeticoes'].toString(),
+                              ),
+                              TextEditingController(
+                                text: ex['pesoInicial'].toString(),
+                              ),
+                              TextEditingController(),
+                            );
+
+                            if (!mounted) return; // segurança
+                            setState(() {
+                              _tempoRealPorGrupo[grupoId] =
+                                  (_tempoRealPorGrupo[grupoId] ?? 0) +
+                                  (_tempoExercicio[ex['id']] ?? 0);
+                              _tempoExercicio[ex['id']] = 0;
+                              _cronometros[ex['id']]?.cancel();
+                              _cronometros[ex['id']] = null;
+                              _exerciciosEmExecucao[ex['id']] = false;
+                              _ultimaConclusao[ex['id']] = DateTime.now();
+                            });
+                          }
+                        },
+                        child: const Text(
+                          'Encerrar',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      );
+                    }
+
+                    // Caso contrário → mostra botão Iniciar
+                    return ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () {
+                        if (!mounted) return; // segurança
+                        setState(() {
+                          _exerciciosEmExecucao[ex['id']] = true;
+                        });
+                      },
+                      child: const Text(
+                        'Iniciar',
+                        style: TextStyle(color: Colors.black),
+                      ),
+                    );
+                  }(),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // DIALOG PARA REGISTRAR EXERCÍCIO
+  void _exibirDialogoRegistroExercicio(
+    Map<String, dynamic> exercicio,
+    String treinoId,
+    String dataFormatada,
+  ) {
+    final seriesController = TextEditingController(
+      text: exercicio['series']?.toString() ?? '3',
+    );
+    final repeticoesController = TextEditingController(
+      text: exercicio['repeticoes']?.toString() ?? '10',
+    );
+    final pesoController = TextEditingController(
+      text: exercicio['pesoInicial']?.toString() ?? '0',
+    );
+    final obsController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Registrar: ${exercicio['nome']}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: seriesController,
+                decoration: const InputDecoration(
+                  labelText: 'Séries realizadas',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: repeticoesController,
+                decoration: const InputDecoration(
+                  labelText: 'Repetições realizadas',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: pesoController,
+                decoration: const InputDecoration(
+                  labelText: 'Peso utilizado (kg)',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: obsController,
+                decoration: const InputDecoration(labelText: 'Observações'),
+                maxLines: 2,
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -561,7 +834,22 @@ void dispose() {
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, controller.text),
+            onPressed: () async {
+              Navigator.pop(context);
+
+              // segurança: só prossegue se o widget ainda está montado
+              if (!mounted) return;
+
+              await _salvarRegistroExercicio(
+                exercicio,
+                treinoId,
+                dataFormatada,
+                seriesController,
+                repeticoesController,
+                pesoController,
+                obsController,
+              );
+            },
             child: const Text('Salvar'),
           ),
         ],
@@ -569,336 +857,531 @@ void dispose() {
     );
   }
 
-  // INICIAR TREINO
-  Future<void> _iniciarTreino(String grupoId, String grupoNome) async {
-  final hoje = DateTime.now();
-  final dataFormatada =
-      '${hoje.year}-${hoje.month.toString().padLeft(2, '0')}-${hoje.day.toString().padLeft(2, '0')}';
+  // SALVAR REGISTRO DE EXERCÍCIO
+  Future<void> _salvarRegistroExercicio(
+    Map<String, dynamic> exercicio,
+    String treinoId,
+    String dataFormatada,
+    TextEditingController seriesController,
+    TextEditingController repeticoesController,
+    TextEditingController pesoController,
+    TextEditingController obsController,
+  ) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
 
-  final treinoId = await ExercicioRealizadoService().iniciarTreino(grupoId, dataFormatada);
-
-  if (treinoId != null) {
-    showCustomSnackBar(
-      context,
-      'Treino de "$grupoNome" iniciado!',
-      backgroundColor: Colors.green,
+    final sucesso = await ExercicioRealizadoService().registrarExercicio(
+      treinoRealizadoId: treinoId,
+      exercicioId: exercicio['id'] ?? '',
+      seriesRealizadas: int.tryParse(seriesController.text) ?? 0,
+      repeticoesRealizadas: int.tryParse(repeticoesController.text) ?? 0,
+      pesoUtilizado: double.tryParse(pesoController.text) ?? 0.0,
+      dataSessao: dataFormatada,
+      observacoes: obsController.text.trim(),
     );
 
     if (!mounted) return;
-    setState(() {
-      for (var ex in _grupos.firstWhere((g) => g['id'] == grupoId)['exercicios']) {
-        final ultima = _ultimaConclusao[ex['id']];
-        if (ultima == null ||
-            ultima.year != hoje.year ||
-            ultima.month != hoje.month ||
-            ultima.day != hoje.day) {
-          _exerciciosEmExecucao[ex['id']] = false;
-        }
-      }
-    });
-  } else {
-    showCustomSnackBar(
-      context,
-      'Erro ao iniciar treino',
-      backgroundColor: Colors.redAccent.shade100,
-    );
+    Navigator.pop(context); // fecha loading
+
+    if (sucesso) {
+      showCustomSnackBar(
+        context,
+        '${exercicio['nome']} registrado com sucesso!',
+        backgroundColor: Colors.greenAccent,
+      );
+    } else {
+      showCustomSnackBar(
+        context,
+        'Erro ao registrar exercício',
+        backgroundColor: Colors.redAccent.shade100,
+      );
+    }
   }
-}
 
-  // EXIBIR DIALOG COM EXERCÍCIOS DO GRUPO
-void _exibirDialogoExercicios(
-  String grupoId,
-  String grupoNome,
-  String treinoId,
-  String dataFormatada,
-) {
-  final grupo = _grupos.firstWhere((g) => g['id'] == grupoId);
-  final exercicios = (grupo['exercicios'] as List)
-      .where((ex) => ex['ativo'] == true)
-      .toList();
+  // DIALOG DE REGISTRO AO ENCERRAR EXERCÍCIO
+  Future<void> _mostrarDialogRegistroExercicio(
+    Map<String, dynamic> ex,
+    String grupoId,
+    String grupoNome,
+  ) async {
+    // Garante que existe um TreinoRealizado para este grupo
+    final treinoId =
+        _treinoIdPorGrupo[grupoId] ?? await _iniciarTreino(grupoId, grupoNome);
+    if (treinoId == null || !mounted) return;
 
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text('Treino: $grupoNome'),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: ListView.builder(
-          itemCount: exercicios.length,
-          itemBuilder: (context, index) {
-            final ex = exercicios[index];
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              color: Colors.grey[900],
-              child: ListTile(
-                title: Text(
-                  ex['nome'] ?? '',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+    final hoje = DateTime.now();
+    final dataFormatada =
+        '${hoje.year}-${hoje.month.toString().padLeft(2, '0')}-${hoje.day.toString().padLeft(2, '0')}';
+
+    final seriesController = TextEditingController(
+      text: ex['series']?.toString() ?? '',
+    );
+    final repeticoesController = TextEditingController(
+      text: ex['repeticoes']?.toString() ?? '',
+    );
+    final pesoController = TextEditingController(
+      text: (ex['pesoInicial'] ?? 0.0).toString(),
+    );
+    final obsController = TextEditingController();
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: _card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: _border, width: 1),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: _accent.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.timer_outlined,
+                      color: _accent,
+                      size: 20,
+                    ),
                   ),
-                ),
-                subtitle: Text(
-                  '${ex['series']}x${ex['repeticoes']} - ${(ex['pesoInicial'] ?? 0.0).toStringAsFixed(1)}kg',
-                  style: TextStyle(color: Colors.grey[400]),
-                ),
-                trailing: () {
-                  final ultima = _ultimaConclusao[ex['id']];
-                  final hoje = DateTime.now();
-
-                  // Se já foi concluído hoje → botão desabilitado
-                  if (ultima != null &&
-                      ultima.year == hoje.year &&
-                      ultima.month == hoje.month &&
-                      ultima.day == hoje.day) {
-                    return ElevatedButton(
-                      onPressed: null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      ex['nome'] ?? 'Registrar Exercício',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
                       ),
-                      child: const Text(
-                        'Concluído',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    );
-                  }
-
-                  // Se está em execução → mostra botão Encerrar
-                  if (_exerciciosEmExecucao[ex['id']] == true) {
-                    return ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      onPressed: () async {
-                        final confirmar = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Encerrar exercício'),
-                            content: const Text(
-                              'Tem certeza que deseja encerrar este exercício?',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.pop(context, false),
-                                child: const Text('Cancelar'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () =>
-                                    Navigator.pop(context, true),
-                                child: const Text('Encerrar'),
-                              ),
-                            ],
-                          ),
-                        );
-
-                        if (confirmar == true) {
-                          await _salvarRegistroExercicio(
-                            ex,
-                            treinoId,
-                            dataFormatada,
-                            TextEditingController(
-                              text: ex['series'].toString(),
-                            ),
-                            TextEditingController(
-                              text: ex['repeticoes'].toString(),
-                            ),
-                            TextEditingController(
-                              text: ex['pesoInicial'].toString(),
-                            ),
-                            TextEditingController(),
-                          );
-
-                          if (!mounted) return; // segurança
-                          setState(() {
-                            _exerciciosEmExecucao[ex['id']] = false;
-                            _ultimaConclusao[ex['id']] = DateTime.now();
-                          });
-                        }
-                      },
-                      child: const Text(
-                        'Encerrar',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    );
-                  }
-
-                  // Caso contrário → mostra botão Iniciar
-                  return ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    onPressed: () {
-                      if (!mounted) return; // segurança
-                      setState(() {
-                        _exerciciosEmExecucao[ex['id']] = true;
-                      });
-                    },
-                    child: const Text(
-                      'Iniciar',
-                      style: TextStyle(color: Colors.black),
-                    ),
-                  );
-                }(),
+                  ),
+                ],
               ),
-            );
-          },
+              const SizedBox(height: 20),
+              _buildField(
+                controller: seriesController,
+                label: 'Séries realizadas',
+                icon: Icons.repeat_rounded,
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              _buildField(
+                controller: repeticoesController,
+                label: 'Repetições realizadas',
+                icon: Icons.format_list_numbered_rounded,
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              _buildField(
+                controller: pesoController,
+                label: 'Peso utilizado (kg)',
+                icon: Icons.monitor_weight_outlined,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildField(
+                controller: obsController,
+                label: 'Observações (opcional)',
+                icon: Icons.notes_rounded,
+                maxLines: 2,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    style: TextButton.styleFrom(foregroundColor: _textHint),
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancelar'),
+                  ),
+                  const SizedBox(width: 8),
+                  _primaryButton(
+                    label: 'Salvar',
+                    onPressed: () => Navigator.pop(context, true),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Fechar'),
+    );
+
+    if (confirmar != true || !mounted) return;
+
+    await _salvarRegistroExercicio(
+      ex,
+      treinoId,
+      dataFormatada,
+      seriesController,
+      repeticoesController,
+      pesoController,
+      obsController,
+    );
+
+    if (!mounted) return;
+
+    // Atualiza status no servidor para REALIZADO
+    await ExercicioService().atualizarStatus(
+      ex['treinoExercicioAlunoId'] ?? ex['id'],
+      'REALIZADO',
+    );
+
+    setState(() {
+      _tempoRealPorGrupo[grupoId] =
+          (_tempoRealPorGrupo[grupoId] ?? 0) + (_tempoExercicio[ex['id']] ?? 0);
+      _tempoExercicio[ex['id']] = 0;
+      _exerciciosEmExecucao[ex['id']] = false;
+      _ultimaConclusao[ex['id']] = DateTime.now();
+      _cronometros[ex['id']]?.cancel();
+      _cronometros[ex['id']] = null;
+    });
+    await _salvarConclusao(ex['id']);
+  }
+
+  // ─── Shared widget helpers ──────────────────────────────────────────────
+  Widget _buildField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+    bool autofocus = false,
+    TextCapitalization capitalization = TextCapitalization.none,
+  }) {
+    return TextField(
+      controller: controller,
+      autofocus: autofocus,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      textCapitalization: capitalization,
+      style: const TextStyle(color: Colors.white, fontSize: 15),
+      cursorColor: _primary,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: _textHint, fontSize: 14),
+        prefixIcon: Icon(icon, color: _textHint, size: 20),
+        filled: true,
+        fillColor: _inputBg,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 14,
+          horizontal: 16,
         ),
-      ],
-    ),
-  );
-}
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _border, width: 1.2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _primary, width: 1.8),
+        ),
+      ),
+    );
+  }
 
+  Widget _primaryButton({
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [_primary, _primaryDark]),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: _primary.withOpacity(0.35),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        onPressed: onPressed,
+        child: Text(label),
+      ),
+    );
+  }
 
-  // DIALOG PARA REGISTRAR EXERCÍCIO
-  void _exibirDialogoRegistroExercicio(
-  Map<String, dynamic> exercicio,
-  String treinoId,
-  String dataFormatada,
-) {
-  final seriesController = TextEditingController(
-    text: exercicio['series']?.toString() ?? '3',
-  );
-  final repeticoesController = TextEditingController(
-    text: exercicio['repeticoes']?.toString() ?? '10',
-  );
-  final pesoController = TextEditingController(
-    text: exercicio['pesoInicial']?.toString() ?? '0',
-  );
-  final obsController = TextEditingController();
-
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text('Registrar: ${exercicio['nome']}'),
-      content: SingleChildScrollView(
+  Widget _buildConfirmDialog({
+    required String title,
+    required String message,
+    required String confirmLabel,
+    bool danger = false,
+  }) {
+    final color = danger ? _error : _primary;
+    return Dialog(
+      backgroundColor: _card,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: _border, width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: seriesController,
-              decoration: const InputDecoration(
-                labelText: 'Séries realizadas',
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                shape: BoxShape.circle,
               ),
-              keyboardType: TextInputType.number,
+              child: Icon(
+                danger
+                    ? Icons.delete_outline_rounded
+                    : Icons.warning_amber_rounded,
+                color: color,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: const TextStyle(color: _textSub, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _textSub,
+                      side: const BorderSide(color: _border),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancelar'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    onPressed: () => Navigator.pop(context, true),
+                    child: Text(confirmLabel),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExercicioDialog({
+    required String titulo,
+    required TextEditingController nomeController,
+    required TextEditingController seriesController,
+    required TextEditingController repeticoesController,
+    required TextEditingController pesoController,
+    required TextEditingController obsController,
+    required List<String> gruposMusculares,
+    required String grupoInicial,
+    required ValueChanged<String?> onGrupoChanged,
+    bool autofocus = false,
+  }) {
+    return Dialog(
+      backgroundColor: _card,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: _border, width: 1),
+      ),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _accent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.sports_gymnastics_rounded,
+                    color: _accent,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  titulo,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _buildField(
+              controller: nomeController,
+              label: 'Nome do exercício',
+              icon: Icons.label_outline_rounded,
+              autofocus: autofocus,
+              capitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: repeticoesController,
-              decoration: const InputDecoration(
-                labelText: 'Repetições realizadas',
-              ),
-              keyboardType: TextInputType.number,
+            // Dropdown grupo muscular
+            StatefulBuilder(
+              builder: (context, setStateLocal) {
+                String selected = grupoInicial;
+                return DropdownButtonFormField<String>(
+                  value: selected,
+                  dropdownColor: _inputBg,
+                  style: const TextStyle(color: Colors.white, fontSize: 15),
+                  decoration: InputDecoration(
+                    labelText: 'Grupo muscular',
+                    labelStyle: const TextStyle(color: _textHint, fontSize: 14),
+                    prefixIcon: const Icon(
+                      Icons.accessibility_new_rounded,
+                      color: _textHint,
+                      size: 20,
+                    ),
+                    filled: true,
+                    fillColor: _inputBg,
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 16,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _border, width: 1.2),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _primary, width: 1.8),
+                    ),
+                  ),
+                  items: gruposMusculares
+                      .map(
+                        (g) => DropdownMenuItem(
+                          value: g,
+                          child: Text(
+                            g,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (v) {
+                    setStateLocal(() => selected = v ?? selected);
+                    onGrupoChanged(v);
+                  },
+                );
+              },
             ),
             const SizedBox(height: 12),
-            TextField(
+            Row(
+              children: [
+                Expanded(
+                  child: _buildField(
+                    controller: seriesController,
+                    label: 'Séries',
+                    icon: Icons.repeat_rounded,
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildField(
+                    controller: repeticoesController,
+                    label: 'Repetições',
+                    icon: Icons.format_list_numbered_rounded,
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildField(
               controller: pesoController,
-              decoration: const InputDecoration(
-                labelText: 'Peso utilizado (kg)',
-              ),
+              label: 'Peso inicial (kg)',
+              icon: Icons.monitor_weight_outlined,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
             ),
             const SizedBox(height: 12),
-            TextField(
+            _buildField(
               controller: obsController,
-              decoration: const InputDecoration(labelText: 'Observações'),
+              label: 'Observações (opcional)',
+              icon: Icons.notes_rounded,
               maxLines: 2,
+              capitalization: TextCapitalization.sentences,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: _textHint),
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancelar'),
+                ),
+                const SizedBox(width: 8),
+                _primaryButton(
+                  label: 'Salvar',
+                  onPressed: () => Navigator.pop(context, true),
+                ),
+              ],
             ),
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            Navigator.pop(context);
-
-            // segurança: só prossegue se o widget ainda está montado
-            if (!mounted) return;
-
-            await _salvarRegistroExercicio(
-              exercicio,
-              treinoId,
-              dataFormatada,
-              seriesController,
-              repeticoesController,
-              pesoController,
-              obsController,
-            );
-          },
-          child: const Text('Salvar'),
-        ),
-      ],
-    ),
-  );
-}
-
-
-  // SALVAR REGISTRO DE EXERCÍCIO
-  Future<void> _salvarRegistroExercicio(
-  Map<String, dynamic> exercicio,
-  String treinoId,
-  String dataFormatada,
-  TextEditingController seriesController,
-  TextEditingController repeticoesController,
-  TextEditingController pesoController,
-  TextEditingController obsController,
-) async {
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => const Center(child: CircularProgressIndicator()),
-  );
-
-  final sucesso = await ExercicioRealizadoService().registrarExercicio(
-  treinoRealizadoId: treinoId,
-  exercicioId: exercicio['id'] ?? '',
-  seriesRealizadas: int.tryParse(seriesController.text) ?? 0,
-  repeticoesRealizadas: int.tryParse(repeticoesController.text) ?? 0,
-  pesoUtilizado: double.tryParse(pesoController.text) ?? 0.0,
-  dataSessao: dataFormatada,
-  observacoes: obsController.text.trim(),
-);
-
-
-  if (!mounted) return;
-  Navigator.pop(context); // fecha loading
-
-  if (sucesso) {
-    showCustomSnackBar(
-      context,
-      '${exercicio['nome']} registrado com sucesso!',
-      backgroundColor: Colors.green,
-    );
-  } else {
-    showCustomSnackBar(
-      context,
-      'Erro ao registrar exercício',
-      backgroundColor: Colors.redAccent.shade100,
     );
   }
-}
-
 
   Widget _buildGrupoCard(Map<String, dynamic> grupo) {
     final grupoId = grupo['id'];
@@ -906,409 +1389,616 @@ void _exibirDialogoExercicios(
         .where((ex) => ex['ativo'] == true)
         .toList();
     final count = exercicios.length;
-    final tempoTotal = count * 5;
+    final tempoAcumulado =
+        (_tempoRealPorGrupo[grupoId] ?? 0) +
+        exercicios
+            .where((ex) => _exerciciosEmExecucao[ex['id']] == true)
+            .fold<int>(0, (sum, ex) => sum + (_tempoExercicio[ex['id']] ?? 0));
+    final tempoLabel = tempoAcumulado > 0
+        ? (tempoAcumulado >= 60
+              ? '${tempoAcumulado ~/ 60}min ${tempoAcumulado % 60}s'
+              : '${tempoAcumulado}s')
+        : '~${count * 5} min';
 
-    return Card(
-      elevation: 0,
-      color: Colors.grey[900],
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey[800]!, width: 1),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _border.withOpacity(0.7), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-      child: ExpansionTile(
-        key: PageStorageKey(grupoId),
-        initiallyExpanded: _gruposExpandidos.contains(grupoId),
-        onExpansionChanged: (expanded) {
-          setState(() {
-            if (expanded) {
-              _gruposExpandidos.add(grupoId);
-            } else {
-              _gruposExpandidos.remove(grupoId);
-            }
-          });
-        },
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                grupo['nome'] ?? 'Grupo sem nome',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: Colors.white,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.redAccent),
-              itemBuilder: (context) => [
-                const PopupMenuItem(value: 'editar', child: Text('Editar')),
-                const PopupMenuItem(
-                  value: 'desativar',
-                  child: Text(
-                    'Excluir',
-                    style: TextStyle(color: Colors.redAccent),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          key: PageStorageKey(grupoId),
+          initiallyExpanded: _gruposExpandidos.contains(grupoId),
+          onExpansionChanged: (expanded) {
+            setState(() {
+              if (expanded) {
+                _gruposExpandidos.add(grupoId);
+              } else {
+                _gruposExpandidos.remove(grupoId);
+              }
+            });
+          },
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  grupo['nome'] ?? 'Grupo sem nome',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: Colors.white,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: _textHint),
+                color: _card,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: _border),
+                ),
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'editar',
+                    child: Row(
+                      children: const [
+                        Icon(Icons.edit_outlined, color: _textSub, size: 18),
+                        SizedBox(width: 10),
+                        Text(
+                          'Editar',
+                          style: TextStyle(color: Colors.white, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'desativar',
+                    child: Row(
+                      children: const [
+                        Icon(
+                          Icons.delete_outline_rounded,
+                          color: _error,
+                          size: 18,
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          'Excluir',
+                          style: TextStyle(color: _error, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                onSelected: (value) {
+                  if (value == 'editar') {
+                    _editarGrupo(grupoId, grupo['nome']);
+                  } else if (value == 'desativar') {
+                    _excluirGrupo(grupoId, grupo['nome']);
+                  }
+                },
+              ),
+            ],
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(left: 50.0, bottom: 4),
+            child: Row(
+              children: [
+                Text(
+                  '$count exercício${count == 1 ? '' : 's'}',
+                  style: const TextStyle(color: _textHint, fontSize: 12),
+                ),
+                const SizedBox(width: 10),
+                const Icon(Icons.access_time_rounded, size: 13, color: _accent),
+                const SizedBox(width: 4),
+                Text(
+                  tempoLabel,
+                  style: const TextStyle(color: _textHint, fontSize: 12),
                 ),
               ],
-              onSelected: (value) {
-                if (value == 'editar') {
-                  _editarGrupo(grupoId, grupo['nome']);
-                } else if (value == 'desativar') {
-                  _excluirGrupo(grupoId, grupo['nome']);
-                }
-              },
             ),
-          ],
-        ),
-        subtitle: Row(
+          ),
           children: [
-            Text(
-              '$count exercício${count == 1 ? '' : 's'}',
-              style: TextStyle(color: Colors.grey[400], fontSize: 13),
-            ),
-            const SizedBox(width: 12),
-            const Icon(Icons.access_time, size: 14, color: Colors.amber),
-            const SizedBox(width: 4),
-            Text(
-              '$tempoTotal min',
-              style: TextStyle(color: Colors.grey[400], fontSize: 13),
-            ),
-            const Spacer(),
-          ],
-        ),
-        children: [
-          Divider(thickness: 0.5, height: 1, color: Colors.grey[800]),
-          if (exercicios.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Nenhum exercício neste grupo.'),
-            ),
-          for (var ex in exercicios)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Builder(
-                builder: (context) {
-                  final ultima = _ultimaConclusao[ex['id']];
-                  final hoje = DateTime.now();
-                  final concluidoHoje = ultima != null &&
-                      ultima.year == hoje.year &&
-                      ultima.month == hoje.month &&
-                      ultima.day == hoje.day;
-
-                  return Stack(
-                    children: [
-                      // ── Card principal ──
-                      Opacity(
-                        opacity: concluidoHoje ? 0.45 : 1.0,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: concluidoHoje
-                                  ? Colors.green.withOpacity(0.4)
-                                  : Colors.grey[800]!,
-                              width: concluidoHoje ? 1.0 : 0.5,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            color: Colors.grey[850],
-                          ),
-                          padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Linha principal: nome + ícones + menu
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            ex['nome'] ?? '',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                              color: Color.fromARGB(255, 100, 180, 220),
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            if (_exerciciosEmExecucao[ex['id']] == true)
-                              // ── Em execução: mostra STOP ──
-                              IconButton(
-                                icon: const Icon(Icons.stop, color: Colors.red),
-                                tooltip: 'Parar',
-                                onPressed: () async {
-                                  final sucesso = await ExercicioService()
-                                      .atualizarStatus(ex['id'], 'REALIZADO');
-                                  if (sucesso) {
-                                    setState(() {
-                                      _exerciciosEmExecucao[ex['id']] = false;
-                                      // registra conclusão com a data/hora atual
-                                      _ultimaConclusao[ex['id']] = DateTime.now();
-                                      // para cronômetro
-                                      _cronometros[ex['id']]?.cancel();
-                                      _cronometros[ex['id']] = null;
-                                    });
-                                  }
-                                },
-                              )
-                            else if (() {
-                              final ultima = _ultimaConclusao[ex['id']];
-                              if (ultima == null) return false;
-                              final hoje = DateTime.now();
-                              return ultima.year == hoje.year &&
-                                  ultima.month == hoje.month &&
-                                  ultima.day == hoje.day;
-                            }())
-                              // ── Concluído hoje: play desabilitado ──
-                              Tooltip(
-                                message: 'Concluído hoje',
-                                child: IconButton(
-                                  icon: const Icon(
-                                    Icons.play_arrow,
-                                    color: Colors.grey,
-                                  ),
-                                  onPressed: null,
-                                ),
-                              )
-                            else
-                              // ── Normal: play ativo ──
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.play_arrow,
-                                  color: Colors.green,
-                                ),
-                                tooltip: 'Iniciar',
-                                onPressed: () async {
-                                  final sucesso = await ExercicioService()
-                                      .atualizarStatus(ex['id'], 'EM_EXECUCAO');
-                                  if (sucesso) {
-                                    setState(() {
-                                      _exerciciosEmExecucao[ex['id']] = true;
-                                      _tempoExercicio[ex['id']] = 0;
-
-                                      // inicia cronômetro em tempo real
-                                      _cronometros[ex['id']]?.cancel();
-                                      _cronometros[ex['id']] = Timer.periodic(
-                                        const Duration(seconds: 1),
-                                        (timer) {
-                                          setState(() {
-                                            _tempoExercicio[ex['id']] =
-                                                (_tempoExercicio[ex['id']] ?? 0) +
-                                                1;
-                                          });
-                                        },
-                                      );
-                                    });
-                                  }
-                                },
-                              ),
-                            PopupMenuButton<String>(
-                              icon: const Icon(
-                                Icons.more_vert,
-                                color: Colors.amber,
-                              ),
-                              itemBuilder: (context) => [
-                                const PopupMenuItem(
-                                  value: 'editar',
-                                  child: Text('Editar'),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'excluir',
-                                  child: Text(
-                                    'Excluir',
-                                    style: TextStyle(color: Colors.redAccent),
-                                  ),
-                                ),
-                              ],
-                              onSelected: (value) {
-                                if (value == 'editar') {
-                                  _editarExercicio(ex);
-                                } else if (value == 'excluir') {
-                                  _confirmarExclusaoExercicio(ex);
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
+            Divider(thickness: 0.5, height: 1, color: _border.withOpacity(0.5)),
+            if (exercicios.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      color: _textHint,
+                      size: 16,
                     ),
-
-                    const SizedBox(height: 6),
-
-                    Row(
-                      children: [
-                        Text(
-                          '${ex['series']}x${ex['repeticoes']} - ${(ex['pesoInicial'] ?? 0.0).toStringAsFixed(1)}kg',
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const Spacer(),
-                        const Icon(Icons.timer, size: 14, color: Colors.amber),
-                        const SizedBox(width: 4),
-                        Text(
-                          _tempoExercicio[ex['id']] != null
-                              ? '${(_tempoExercicio[ex['id']]! ~/ 60).toString().padLeft(2, '0')}:${(_tempoExercicio[ex['id']]! % 60).toString().padLeft(2, '0')}'
-                              : '00:00',
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
+                    SizedBox(width: 8),
+                    Text(
+                      'Nenhum exercício neste grupo.',
+                      style: TextStyle(color: _textHint, fontSize: 13),
                     ),
-
-                    // Observação
-                    if ((ex['observacao'] ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        'Obs: ${ex['observacao']}',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
                   ],
-                 ),
-                        ),
-                      ),
-                      if (concluidoHoje)
-                        Positioned.fill(
+                ),
+              ),
+            for (var ex in exercicios)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                child: Builder(
+                  builder: (context) {
+                    final ultima = _ultimaConclusao[ex['id']];
+                    final hoje = DateTime.now();
+                    final concluidoHoje =
+                        ultima != null &&
+                        ultima.year == hoje.year &&
+                        ultima.month == hoje.month &&
+                        ultima.day == hoje.day;
+                    final emExecucao = _exerciciosEmExecucao[ex['id']] == true;
+
+                    return Stack(
+                      children: [
+                        Opacity(
+                          opacity: concluidoHoje ? 0.45 : 1.0,
                           child: Container(
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: Colors.black.withOpacity(0.35),
+                              color: _cardEx,
+                              border: Border.all(
+                                color: concluidoHoje
+                                    ? _success.withOpacity(0.4)
+                                    : emExecucao
+                                    ? _accent.withOpacity(0.4)
+                                    : _border.withOpacity(0.6),
+                                width: 1,
+                              ),
+                              borderRadius: BorderRadius.circular(14),
                             ),
-                            child: Center(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withOpacity(0.85),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
+                            padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
                                   children: [
-                                    Icon(
-                                      Icons.check_circle_outline,
-                                      color: Colors.white,
-                                      size: 16,
+                                    Expanded(
+                                      child: Text(
+                                        ex['nome'] ?? '',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 15,
+                                          color: emExecucao
+                                              ? _accent
+                                              : Colors.white,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                    SizedBox(width: 6),
+                                    // Botão play / stop
+                                    if (emExecucao)
+                                      _iconBtn(
+                                        icon: Icons.stop_circle_rounded,
+                                        color: _error,
+                                        tooltip: 'Encerrar',
+                                        onPressed: () async {
+                                          await _mostrarDialogRegistroExercicio(
+                                            ex,
+                                            grupoId,
+                                            grupo['nome'] ?? '',
+                                          );
+                                        },
+                                      )
+                                    else if (concluidoHoje)
+                                      Tooltip(
+                                        message: 'Concluído hoje',
+                                        child: _iconBtn(
+                                          icon:
+                                              Icons.play_circle_outline_rounded,
+                                          color: _textHint,
+                                          onPressed: null,
+                                        ),
+                                      )
+                                    else
+                                      _iconBtn(
+                                        icon: Icons.play_circle_fill_rounded,
+                                        color: _success,
+                                        tooltip: 'Iniciar',
+                                        onPressed: () async {
+                                          if (_treinoIdPorGrupo[grupoId] ==
+                                              null) {
+                                            final tid = await _iniciarTreino(
+                                              grupoId,
+                                              grupo['nome'] ?? '',
+                                            );
+                                            if (tid == null || !mounted) return;
+                                          }
+                                          final sucesso = await ExercicioService()
+                                              .atualizarStatus(
+                                                ex['treinoExercicioAlunoId'] ??
+                                                    ex['id'],
+                                                'EM_EXECUCAO',
+                                              );
+                                          if (sucesso) {
+                                            setState(() {
+                                              _exerciciosEmExecucao[ex['id']] =
+                                                  true;
+                                              _tempoExercicio[ex['id']] = 0;
+                                              _cronometros[ex['id']]?.cancel();
+                                              _cronometros[ex['id']] = Timer.periodic(
+                                                const Duration(seconds: 1),
+                                                (timer) {
+                                                  setState(() {
+                                                    _tempoExercicio[ex['id']] =
+                                                        (_tempoExercicio[ex['id']] ??
+                                                            0) +
+                                                        1;
+                                                  });
+                                                },
+                                              );
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    // Menu editar/excluir
+                                    PopupMenuButton<String>(
+                                      icon: const Icon(
+                                        Icons.more_vert,
+                                        color: _textHint,
+                                        size: 20,
+                                      ),
+                                      color: _card,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: const BorderSide(color: _border),
+                                      ),
+                                      itemBuilder: (context) => [
+                                        PopupMenuItem(
+                                          value: 'editar',
+                                          child: Row(
+                                            children: const [
+                                              Icon(
+                                                Icons.edit_outlined,
+                                                color: _textSub,
+                                                size: 18,
+                                              ),
+                                              SizedBox(width: 10),
+                                              Text(
+                                                'Editar',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'excluir',
+                                          child: Row(
+                                            children: const [
+                                              Icon(
+                                                Icons.delete_outline_rounded,
+                                                color: _error,
+                                                size: 18,
+                                              ),
+                                              SizedBox(width: 10),
+                                              Text(
+                                                'Excluir',
+                                                style: TextStyle(
+                                                  color: _error,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                      onSelected: (value) {
+                                        if (value == 'editar') {
+                                          _editarExercicio(ex);
+                                        } else if (value == 'excluir') {
+                                          _confirmarExclusaoExercicio(ex);
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _primary.withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        '${ex['series']}x${ex['repeticoes']}',
+                                        style: const TextStyle(
+                                          color: _accent,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
                                     Text(
-                                      'Concluído hoje',
+                                      '${(ex['pesoInicial'] ?? 0.0).toStringAsFixed(1)} kg',
+                                      style: const TextStyle(
+                                        color: _textSub,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    const Icon(
+                                      Icons.timer_outlined,
+                                      size: 13,
+                                      color: _primary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _tempoExercicio[ex['id']] != null
+                                          ? '${(_tempoExercicio[ex['id']]! ~/ 60).toString().padLeft(2, '0')}:${(_tempoExercicio[ex['id']]! % 60).toString().padLeft(2, '0')}'
+                                          : '00:00',
                                       style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
+                                        color: emExecucao ? _accent : _textHint,
+                                        fontSize: 12,
+                                        fontWeight: emExecucao
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
+                                if ((ex['observacao'] ?? '').isNotEmpty) ...[
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '\u2139\uFE0F ${ex['observacao']}',
+                                    style: const TextStyle(
+                                      color: _textHint,
+                                      fontSize: 12,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                         ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: SizedBox(
-              width: double.infinity,
-              child: TextButton.icon(
-                icon: const Icon(Icons.add, color: Colors.amber),
-                label: const Text(
-                  'Adicionar Exercício',
-                  style: TextStyle(color: Colors.amber),
+                        if (concluidoHoje)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                color: Colors.black.withOpacity(0.3),
+                              ),
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _success.withOpacity(0.9),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle_outline_rounded,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Concluído hoje',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
                 ),
-                onPressed: () => _adicionarExercicio(grupoId),
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.grey[800],
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('Adicionar Exercício'),
+                  onPressed: () => _adicionarExercicio(grupoId),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _accent,
+                    side: const BorderSide(color: _border, width: 1.2),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
+  Widget _iconBtn({
+    required IconData icon,
+    required Color color,
+    VoidCallback? onPressed,
+    String? tooltip,
+  }) {
+    final btn = IconButton(
+      icon: Icon(icon, color: color, size: 26),
+      onPressed: onPressed,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+      splashRadius: 20,
+    );
+    return tooltip != null ? Tooltip(message: tooltip, child: btn) : btn;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final hoje = DateTime.now();
+    final diaSemana = _getDiaSemana(hoje);
+
     return WillPopScope(
       onWillPop: () async => false,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.black54,
-          title: const SizedBox.shrink(),
-          actions: [
-            TextButton.icon(
-              onPressed: _criarGrupo,
-              icon: const Icon(
-                Icons.add,
-                color: Color.fromARGB(255, 189, 156, 245),
-              ),
-              label: const Text(
-                'Treino',
-                style: TextStyle(color: Color.fromARGB(255, 189, 156, 245)),
-              ),
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 26,
-                  vertical: 18,
-                ),
-              ),
-            ),
-          ],
-        ),
-
-        body: Stack(
+        body: Column(
           children: [
-            // Imagem de fundo
-            SizedBox.expand(
-              child: Image.asset(
-                'assets/images/Copilot_20251029_183912.png',
-                fit: BoxFit.cover,
+            // ─── Cabeçalho interno da aba ──────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          diaSemana,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: _textHint,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        const Text(
+                          'Meus Treinos',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Botão novo grupo
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: LayoutBuilder(
+                      builder: (context, constraints) {
+                        if (constraints.maxWidth < 340) {
+                          return const SizedBox.shrink(); // só ícone
+                        }
+                        return const Text('Novo Grupo');
+                      },
+                    ),
+                    onPressed: _criarGrupo,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _accent,
+                      side: const BorderSide(color: _border, width: 1.2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 6,
+                      ),
+                      minimumSize: const Size(36, 36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            // Conteúdo por cima da imagem
-            _carregando
-              ? const Center(child: CircularProgressIndicator())
-              : RefreshIndicator(
-                onRefresh: _carregarGrupos,
-                child: ListView.builder(
-                  itemCount: _grupos.length,
-                  itemBuilder: (context, index) {
-                   return _buildGrupoCard(_grupos[index]);
-                 },
-                ),
-              ),
+            const SizedBox(height: 4),
+            // ─── Lista de grupos ───────────────────────────────────────
+            Expanded(
+              child: _carregando
+                  ? const Center(
+                      child: CircularProgressIndicator(color: _primary),
+                    )
+                  : _grupos.isEmpty
+                  ? _buildEmptyState()
+                  : RefreshIndicator(
+                      onRefresh: _carregarGrupos,
+                      color: _primary,
+                      backgroundColor: _card,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 24, top: 4),
+                        itemCount: _grupos.length,
+                        itemBuilder: (context, index) =>
+                            _buildGrupoCard(_grupos[index]),
+                      ),
+                    ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: _primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.fitness_center_rounded,
+              color: _primary,
+              size: 48,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Nenhum grupo ainda',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Toque em "Novo Grupo" para começar',
+            style: TextStyle(color: _textHint, fontSize: 14),
+          ),
+        ],
       ),
     );
   }

@@ -10,10 +10,7 @@ void mostrarSnackBarPadrao(
     SnackBar(
       content: Text(
         mensagem,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
       duration: duracao,
       behavior: SnackBarBehavior.floating,
@@ -22,10 +19,8 @@ void mostrarSnackBarPadrao(
         right: 16,
         bottom: 80, // sobe o snackbar pro topo do rodapé
       ),
-      backgroundColor: erro ? Colors.red : Colors.green,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      backgroundColor: erro ? Colors.red : Colors.greenAccent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
   );
 }

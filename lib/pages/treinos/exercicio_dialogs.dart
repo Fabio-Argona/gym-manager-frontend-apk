@@ -63,7 +63,7 @@ void mostrarCriarExercicio(
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Exercício criado com sucesso'),
-                    backgroundColor: Colors.green,
+                    backgroundColor: Colors.greenAccent,
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
