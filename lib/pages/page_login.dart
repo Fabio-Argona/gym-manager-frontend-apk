@@ -27,7 +27,10 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
+  late AnimationController _titleController;
+  late AnimationController _subtitleController;
+
   final _formKey = GlobalKey<FormState>();
   bool isLogin = true;
   bool isLoading = false;
@@ -37,7 +40,25 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
+    _titleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..forward();
+    _subtitleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    Future.delayed(const Duration(milliseconds: 1600), () {
+      if (mounted) _subtitleController.forward();
+    });
     _verificarBiometria();
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _subtitleController.dispose();
+    super.dispose();
   }
 
   Future<void> _verificarBiometria() async {
@@ -169,32 +190,125 @@ class _LoginPageState extends State<LoginPage> {
 
   // â”€â”€â”€ Branding â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildBranding() {
-    return Column(
-      children: [
-        // Título removido conforme solicitado
-        const SizedBox(height: 4),
-        const Text(
-          'Old School Gym Manager',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: _primary,
-            letterSpacing: 0.6,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Puxa Ferro - Pump das Antigas',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w400,
-            color: _textHint,
-            letterSpacing: 0.4,
-          ),
-        ),
-      ],
+    const title = 'Old School Gym Manager';
+    const n = title.length;
+
+    return AnimatedBuilder(
+      animation: _titleController,
+      builder: (context, _) {
+        final letterWidgets = List.generate(n, (i) {
+          final start = i / n * 0.70;
+          final end = (start + 0.30).clamp(0.0, 1.0);
+          final fadeEnd = (start + 0.18).clamp(0.0, 1.0);
+
+          final slideAnim =
+              Tween<Offset>(
+                begin: const Offset(0, -1.8),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(
+                  parent: _titleController,
+                  curve: Interval(start, end, curve: Curves.elasticOut),
+                ),
+              );
+
+          final fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+            CurvedAnimation(
+              parent: _titleController,
+              curve: Interval(start, fadeEnd, curve: Curves.easeIn),
+            ),
+          );
+
+          return FadeTransition(
+            opacity: fadeAnim,
+            child: SlideTransition(
+              position: slideAnim,
+              child: Text(
+                title[i],
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _primary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          );
+        });
+
+        return Column(
+          children: [
+            const SizedBox(height: 4),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: letterWidgets,
+            ),
+            const SizedBox(height: 4),
+            AnimatedBuilder(
+              animation: _subtitleController,
+              builder: (context, _) {
+                final slideAnim =
+                    Tween<Offset>(
+                      begin: const Offset(2.0, 0),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: _subtitleController,
+                        curve: const Interval(
+                          0.0,
+                          0.55,
+                          curve: Curves.easeOutCubic,
+                        ),
+                      ),
+                    );
+
+                final scaleAnim =
+                    TweenSequence<double>([
+                      TweenSequenceItem(
+                        tween: Tween(
+                          begin: 1.0,
+                          end: 1.28,
+                        ).chain(CurveTween(curve: Curves.easeOut)),
+                        weight: 40,
+                      ),
+                      TweenSequenceItem(
+                        tween: Tween(
+                          begin: 1.28,
+                          end: 1.0,
+                        ).chain(CurveTween(curve: Curves.easeInOut)),
+                        weight: 60,
+                      ),
+                    ]).animate(
+                      CurvedAnimation(
+                        parent: _subtitleController,
+                        curve: const Interval(0.50, 1.0),
+                      ),
+                    );
+
+                return ClipRect(
+                  child: SlideTransition(
+                    position: slideAnim,
+                    child: ScaleTransition(
+                      scale: scaleAnim,
+                      child: const Text(
+                        'Puxa Ferro - Pump das Antigas',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                          color: _textHint,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -228,6 +342,7 @@ class _LoginPageState extends State<LoginPage> {
                       _buildInput(
                         'Nome completo',
                         Icons.person_outline_rounded,
+                        textCapitalization: TextCapitalization.words,
                         onChanged: (v) => nome = v.trim(),
                       ),
                       const SizedBox(height: 14),
@@ -445,6 +560,7 @@ class _LoginPageState extends State<LoginPage> {
     List<TextInputFormatter>? inputFormatters,
     TextInputType? keyboardType,
     bool obscureText = false,
+    TextCapitalization textCapitalization = TextCapitalization.none,
     String? Function(String?)? validator,
     void Function(String)? onChanged,
   }) {
@@ -453,6 +569,7 @@ class _LoginPageState extends State<LoginPage> {
       inputFormatters: inputFormatters,
       keyboardType: keyboardType,
       obscureText: obscureText,
+      textCapitalization: textCapitalization,
       style: const TextStyle(color: Colors.white, fontSize: 15),
       cursorColor: _primary,
       decoration: InputDecoration(

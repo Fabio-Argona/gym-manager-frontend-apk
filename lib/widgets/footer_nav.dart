@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
+const _bg2 = Color(0xFF1A1040);
 const _card = Color(0xFF1C1B2E);
 const _primary = Color(0xFF7C3AED);
 const _accent = Color(0xFF06B6D4);
@@ -25,14 +26,20 @@ class FooterNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: _card,
-        border: Border(top: BorderSide(color: _border, width: 1)),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [_bg2, _card],
+        ),
+        border: Border(
+          top: BorderSide(color: _border.withOpacity(0.8), width: 1),
+        ),
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 60,
+          height: 62,
           child: Row(
             children: [
               _NavItem(
@@ -47,12 +54,14 @@ class FooterNav extends StatelessWidget {
                 selected: selectedIndex == 1,
                 onTap: () => onItemTapped(1),
               ),
+              Container(width: 1, height: 36, color: _border),
               _NavItem(
                 icon: Icons.logout_rounded,
                 label: 'Sair',
                 selected: false,
                 color: _error,
                 onTap: onLogout,
+                dangerStyle: true,
               ),
             ],
           ),
@@ -67,6 +76,7 @@ class _NavItem extends StatelessWidget {
   final String label;
   final bool selected;
   final Color? color;
+  final bool dangerStyle;
   final VoidCallback onTap;
 
   const _NavItem({
@@ -75,6 +85,7 @@ class _NavItem extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.color,
+    this.dangerStyle = false,
   });
 
   @override
@@ -84,29 +95,31 @@ class _NavItem extends StatelessWidget {
     return Expanded(
       child: InkWell(
         onTap: onTap,
-        splashColor: activeColor.withOpacity(0.1),
+        splashColor: activeColor.withOpacity(0.12),
         highlightColor: Colors.transparent,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: activeColor, size: 22),
-            const SizedBox(height: 3),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: selected
+                    ? _primary.withOpacity(0.15)
+                    : dangerStyle
+                    ? _error.withOpacity(0.08)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(icon, color: activeColor, size: 21),
+            ),
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
                 color: activeColor,
                 fontSize: 11,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              ),
-            ),
-            const SizedBox(height: 2),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: selected ? 18 : 0,
-              height: 2,
-              decoration: BoxDecoration(
-                color: _accent,
-                borderRadius: BorderRadius.circular(2),
               ),
             ),
           ],
