@@ -294,14 +294,20 @@ class _ProgressoPageState extends State<ProgressoPage> {
                   _buildHeader(),
                   const SizedBox(height: 10),
                   _buildRecompensasCard(),
-                  const SizedBox(height: 10),
-                  _buildImcCard(),
-                  const SizedBox(height: 10),
-                  _buildEvolucaoCard(),
+                  if (_imc() != 0) ...[
+                    const SizedBox(height: 10),
+                    _buildImcCard(),
+                  ],
+                  if (_ultimaEvolucao != null) ...[
+                    const SizedBox(height: 10),
+                    _buildEvolucaoCard(),
+                  ],
                   const SizedBox(height: 10),
                   _buildHistoricoCard(),
-                  const SizedBox(height: 10),
-                  _buildGrupoMuscularChart(),
+                  if (_grupoCount.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    _buildGrupoMuscularChart(),
+                  ],
                   if (_objetivo.isNotEmpty || _nivel.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     _buildObjetivoCard(),
