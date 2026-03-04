@@ -459,7 +459,11 @@ class _ProgressoPageState extends State<ProgressoPage> {
       100,
       150,
       200,
+      250,
       300,
+      350,
+      400,
+      450,
       500,
     ];
     final badgeIcons = {
@@ -475,7 +479,11 @@ class _ProgressoPageState extends State<ProgressoPage> {
       100: Icons.emoji_events_rounded,
       150: Icons.star_rounded,
       200: Icons.diamond_rounded,
+      250: Icons.diamond_rounded,
       300: Icons.workspace_premium_rounded,
+      350: Icons.workspace_premium_rounded,
+      400: Icons.military_tech_rounded,
+      450: Icons.military_tech_rounded,
       500: Icons.auto_awesome_rounded,
     };
     final badgeLabels = {
@@ -491,7 +499,11 @@ class _ProgressoPageState extends State<ProgressoPage> {
       100: '100d',
       150: '150d',
       200: '200d',
+      250: '250d',
       300: '300d',
+      350: '350d',
+      400: '400d',
+      450: '450d',
       500: '500d',
     };
 
