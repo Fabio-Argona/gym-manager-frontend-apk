@@ -41,6 +41,9 @@ class _ProgressoPageState extends State<ProgressoPage> {
   // Sessões de treino
   List<Map<String, dynamic>> _sessoes = [];
 
+  // Exercícios realizados (progressão)
+  List<Map<String, dynamic>> _progressao = [];
+
   // Carga máxima
   double _cargaMax = 0;
 
@@ -109,8 +112,9 @@ class _ProgressoPageState extends State<ProgressoPage> {
       // Carga máxima
       if (results[3].statusCode == 200) {
         final lista = jsonDecode(results[3].body) as List;
+        _progressao = lista.cast<Map<String, dynamic>>();
         double max = 0;
-        for (final ex in lista) {
+        for (final ex in _progressao) {
           final peso = (ex['peso_utilizado'] ?? ex['pesoUtilizado'] ?? 0)
               .toDouble();
           if (peso > max) max = peso;
@@ -189,11 +193,11 @@ class _ProgressoPageState extends State<ProgressoPage> {
 
   Map<String, int> get _grupoCount {
     final map = <String, int>{};
-    for (final s in _sessoes) {
-      final nome = (s['grupoNome'] ?? s['grupo_nome'] ?? s['nome'] ?? '')
+    for (final ex in _progressao) {
+      final grupo = (ex['grupoMuscular'] ?? ex['grupo_muscular'] ?? '')
           .toString();
-      if (nome.isEmpty) continue;
-      map[nome] = (map[nome] ?? 0) + 1;
+      if (grupo.isEmpty) continue;
+      map[grupo] = (map[grupo] ?? 0) + 1;
     }
     // ordena por contagem decrescente
     final sorted = Map.fromEntries(
@@ -755,7 +759,7 @@ class _ProgressoPageState extends State<ProgressoPage> {
           _sectionTitle('Grupos Musculares', Icons.bar_chart_rounded, _primary),
           const SizedBox(height: 6),
           Text(
-            'Treinos por grupo — total: ${_sessoes.length}',
+            'Exercícios por grupo muscular — total: ${_progressao.length}',
             style: const TextStyle(color: _textHint, fontSize: 11),
           ),
           const SizedBox(height: 18),
