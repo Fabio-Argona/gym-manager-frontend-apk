@@ -176,6 +176,63 @@ class _ProgressoPageState extends State<ProgressoPage> {
 
   int get _totalTreinos => _sessoes.length;
 
+  // ─── Nível / Recompensas ─────────────────────────────────────────────────────
+
+  static const _limitesNivel = [0, 10, 30, 60, 100, 150, 200, 300, 500];
+  static const _nomesNivel = [
+    'Iniciante',
+    'Aprendiz',
+    'Dedicado',
+    'Consistente',
+    'Intermediário',
+    'Avançado',
+    'Elite',
+    'Mestre',
+    'Lendário',
+  ];
+
+  String _nivelAtual() {
+    final d = _diasAtivos;
+    for (int i = _limitesNivel.length - 1; i >= 0; i--) {
+      if (d >= _limitesNivel[i]) return _nomesNivel[i];
+    }
+    return _nomesNivel[0];
+  }
+
+  Color _corNivel() {
+    final d = _diasAtivos;
+    if (d >= 500) return const Color(0xFFFFD700);
+    if (d >= 300) return const Color(0xFFAB47BC);
+    if (d >= 200) return const Color(0xFF26C6DA);
+    if (d >= 150) return const Color(0xFF42A5F5);
+    if (d >= 100) return _success;
+    if (d >= 60) return _warning;
+    if (d >= 30) return _accent;
+    if (d >= 10) return _primary;
+    return _textHint;
+  }
+
+  IconData _iconNivel() {
+    final d = _diasAtivos;
+    if (d >= 500) return Icons.auto_awesome_rounded;
+    if (d >= 300) return Icons.workspace_premium_rounded;
+    if (d >= 200) return Icons.diamond_rounded;
+    if (d >= 150) return Icons.star_rounded;
+    if (d >= 100) return Icons.emoji_events_rounded;
+    if (d >= 60) return Icons.local_fire_department_rounded;
+    if (d >= 30) return Icons.fitness_center_rounded;
+    if (d >= 10) return Icons.bolt_rounded;
+    return Icons.eco_rounded;
+  }
+
+  int _proximoNivelDias() {
+    final d = _diasAtivos;
+    for (final lim in _limitesNivel) {
+      if (d < lim) return lim;
+    }
+    return 500;
+  }
+
   int get _diasAtivos {
     final datas = _sessoes
         .map(
@@ -194,9 +251,10 @@ class _ProgressoPageState extends State<ProgressoPage> {
   Map<String, int> get _grupoCount {
     final map = <String, int>{};
     for (final ex in _progressao) {
-      final grupo = (ex['grupoMuscular'] ?? ex['grupo_muscular'] ?? '')
-          .toString();
-      if (grupo.isEmpty) continue;
+      final raw = (ex['grupoMuscular'] ?? ex['grupo_muscular'] ?? '')
+          .toString()
+          .trim();
+      final grupo = raw.isEmpty ? 'Outros' : raw;
       map[grupo] = (map[grupo] ?? 0) + 1;
     }
     // ordena por contagem decrescente
@@ -236,6 +294,8 @@ class _ProgressoPageState extends State<ProgressoPage> {
                   _buildHeader(),
                   const SizedBox(height: 20),
                   _buildStatsRow(),
+                  const SizedBox(height: 16),
+                  _buildRecompensasCard(),
                   const SizedBox(height: 16),
                   _buildImcCard(),
                   const SizedBox(height: 16),
@@ -331,8 +391,6 @@ class _ProgressoPageState extends State<ProgressoPage> {
   // ─── Stats row ──────────────────────────────────────────────────────────────
 
   Widget _buildStatsRow() {
-    final peso = _ultimaEvolucao?['peso'];
-    final pesoLabel = peso != null ? '${peso.toString()} kg' : '-';
     return Row(
       children: [
         Expanded(
@@ -355,17 +413,222 @@ class _ProgressoPageState extends State<ProgressoPage> {
         const SizedBox(width: 10),
         Expanded(
           child: _statCard(
-            icon: _cargaMax > 0
-                ? Icons.whatshot_rounded
-                : Icons.monitor_weight_outlined,
-            value: _cargaMax > 0
-                ? '${_cargaMax.toStringAsFixed(0)}kg'
-                : pesoLabel,
-            label: _cargaMax > 0 ? 'Carga máx' : 'Peso atual',
-            color: _warning,
+            icon: _iconNivel(),
+            value: _nivelAtual(),
+            label: '$_diasAtivos dias',
+            color: _corNivel(),
           ),
         ),
       ],
+    );
+  }
+
+  // ─── Recompensas Card ──────────────────────────────────────────────────────
+
+  Widget _buildRecompensasCard() {
+    final dias = _diasAtivos;
+    final nivel = _nivelAtual();
+    final cor = _corNivel();
+    final icon = _iconNivel();
+    final proximo = _proximoNivelDias();
+
+    // Faixa do nível atual para barra de progresso
+    int prevLim = 0;
+    for (int i = _limitesNivel.length - 1; i >= 0; i--) {
+      if (dias >= _limitesNivel[i]) {
+        prevLim = _limitesNivel[i];
+        break;
+      }
+    }
+    final range = proximo - prevLim;
+    final progress = dias >= 500
+        ? 1.0
+        : ((dias - prevLim) / range).clamp(0.0, 1.0);
+
+    // Badges: marcos de 10 em 10 até 100, depois 150, 200, 300, 500
+    const marcos = [
+      10,
+      20,
+      30,
+      40,
+      50,
+      60,
+      70,
+      80,
+      90,
+      100,
+      150,
+      200,
+      300,
+      500,
+    ];
+    final badgeIcons = {
+      10: Icons.bolt_rounded,
+      20: Icons.bolt_rounded,
+      30: Icons.fitness_center_rounded,
+      40: Icons.fitness_center_rounded,
+      50: Icons.local_fire_department_rounded,
+      60: Icons.local_fire_department_rounded,
+      70: Icons.local_fire_department_rounded,
+      80: Icons.star_half_rounded,
+      90: Icons.star_half_rounded,
+      100: Icons.emoji_events_rounded,
+      150: Icons.star_rounded,
+      200: Icons.diamond_rounded,
+      300: Icons.workspace_premium_rounded,
+      500: Icons.auto_awesome_rounded,
+    };
+    final badgeLabels = {
+      10: '10d',
+      20: '20d',
+      30: '30d',
+      40: '40d',
+      50: '50d',
+      60: '60d',
+      70: '70d',
+      80: '80d',
+      90: '90d',
+      100: '100d',
+      150: '150d',
+      200: '200d',
+      300: '300d',
+      500: '500d',
+    };
+
+    return _sectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Título
+          Row(
+            children: [
+              const Icon(
+                Icons.military_tech_rounded,
+                color: _warning,
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'Conquistas',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: cor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: cor.withOpacity(0.4)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(icon, color: cor, size: 13),
+                    const SizedBox(width: 4),
+                    Text(
+                      nivel,
+                      style: TextStyle(
+                        color: cor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Barra de XP
+          Row(
+            children: [
+              Text(
+                '$dias dias',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                dias >= 500
+                    ? 'Nível máximo!'
+                    : '$proximo dias para ${_nomesNivel[_limitesNivel.indexOf(proximo)]}',
+                style: const TextStyle(color: _textHint, fontSize: 11),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 7,
+              backgroundColor: _border.withOpacity(0.4),
+              valueColor: AlwaysStoppedAnimation<Color>(cor),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Badges
+          const Text(
+            'Marcos desbloqueados',
+            style: TextStyle(color: _textHint, fontSize: 11),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: marcos.map((m) {
+              final unlocked = dias >= m;
+              final badgeCor = unlocked ? cor : _border;
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: unlocked ? badgeCor.withOpacity(0.18) : _inputBg,
+                      border: Border.all(
+                        color: unlocked
+                            ? badgeCor.withOpacity(0.7)
+                            : _border.withOpacity(0.4),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Icon(
+                      badgeIcons[m]!,
+                      color: unlocked ? badgeCor : _textHint.withOpacity(0.3),
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    badgeLabels[m]!,
+                    style: TextStyle(
+                      color: unlocked
+                          ? cor.withOpacity(0.85)
+                          : _textHint.withOpacity(0.35),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
+        ],
+      ),
     );
   }
 
