@@ -462,7 +462,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _editarPerfil() {
-    setState(() => _selectedIndex = 2); // Muda para a aba ProfilePage
+    setState(() => _selectedIndex = 2);
   }
 
   @override
@@ -592,7 +592,6 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             const SizedBox(width: 12),
-            // ── Nome + saudação ──────────────────────────────────────
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
