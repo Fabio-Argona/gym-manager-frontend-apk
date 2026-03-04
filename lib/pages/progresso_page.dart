@@ -19,6 +19,29 @@ const _border = Color(0xFF3A3857);
 const _textHint = Color(0xFF8884A8);
 const _textSub = Color(0xFFB0ADCC);
 
+Color _corTagGrupo(String? grupo) {
+  switch (grupo?.toLowerCase()) {
+    case 'peito':
+      return const Color(0xFFA07AFF);
+    case 'costas':
+      return const Color(0xFF7AABFF);
+    case 'pernas':
+      return const Color(0xFF7ADFB8);
+    case 'ombros':
+      return const Color(0xFFFF9EA0);
+    case 'bíceps':
+      return const Color(0xFFFFCA7A);
+    case 'tríceps':
+      return const Color(0xFF90EE90);
+    case 'abdômen':
+      return const Color(0xFFFFE57A);
+    case 'glúteos':
+      return const Color(0xFFFF9BE0);
+    default:
+      return _textHint;
+  }
+}
+
 class ProgressoPage extends StatefulWidget {
   const ProgressoPage({super.key});
 
@@ -302,6 +325,8 @@ class _ProgressoPageState extends State<ProgressoPage> {
                   _buildEvolucaoCard(),
                   const SizedBox(height: 16),
                   _buildHistoricoCard(),
+                  const SizedBox(height: 16),
+                  _buildUltimosExerciciosCard(),
                   const SizedBox(height: 16),
                   _buildGrupoMuscularChart(),
                   if (_objetivo.isNotEmpty || _nivel.isNotEmpty) ...[
@@ -992,6 +1017,131 @@ class _ProgressoPageState extends State<ProgressoPage> {
                 ],
               );
             }),
+        ],
+      ),
+    );
+  }
+
+  // ─── Últimos Exercícios ────────────────────────────────────────────────────
+
+  Widget _buildUltimosExerciciosCard() {
+    final ultimos = _progressao.take(5).toList();
+    if (ultimos.isEmpty) return const SizedBox.shrink();
+
+    return _sectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitle(
+            'Últimos Exercícios',
+            Icons.format_list_bulleted_rounded,
+            _accent,
+          ),
+          const SizedBox(height: 12),
+          ...List.generate(ultimos.length, (i) {
+            final ex = ultimos[i];
+            final nome =
+                (ex['nomeExercicio'] ?? ex['nome_exercicio'] ?? 'Exercício')
+                    .toString();
+            final grupo = (ex['grupoMuscular'] ?? ex['grupo_muscular'] ?? '')
+                .toString();
+            final peso = (ex['pesoUtilizado'] ?? ex['peso_utilizado'] ?? 0)
+                .toDouble();
+            final series =
+                ex['seriesRealizadas'] ?? ex['series_realizadas'] ?? '-';
+            final reps =
+                ex['repeticoesRealizadas'] ??
+                ex['repeticoes_realizadas'] ??
+                '-';
+            final data = _formatarData(
+              (ex['dataSessao'] ?? ex['data_sessao'] ?? '').toString(),
+            );
+            final corTag = _corTagGrupo(grupo);
+
+            return Column(
+              children: [
+                if (i > 0)
+                  Divider(
+                    height: 1,
+                    thickness: 0.5,
+                    color: _border.withOpacity(0.5),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: corTag.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.fitness_center_rounded,
+                            color: corTag,
+                            size: 17,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              nome,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                if (grupo.isNotEmpty) ...[
+                                  Text(
+                                    grupo,
+                                    style: TextStyle(
+                                      color: corTag.withOpacity(0.8),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const Text(
+                                    ' · ',
+                                    style: TextStyle(
+                                      color: _textHint,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                                Text(
+                                  '${series}x$reps'
+                                  '${peso > 0 ? '  ${peso.toStringAsFixed(0)}kg' : ''}',
+                                  style: const TextStyle(
+                                    color: _textHint,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        data,
+                        style: const TextStyle(color: _textHint, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }),
         ],
       ),
     );
