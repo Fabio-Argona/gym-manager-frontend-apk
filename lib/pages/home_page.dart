@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_application_treinoabc/services/treino_service.dart';
 import 'package:flutter_application_treinoabc/widgets/footer_nav.dart';
@@ -35,12 +36,14 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   late final List<Widget> _pages;
   String? imagemUrl;
   String? alunoId;
   int _diasAtivos = 0;
+  late AnimationController _ringController;
 
   static const _limitesNivel = [0, 10, 30, 60, 100, 150, 200, 300, 500];
   static const _nomesNivel = [
@@ -96,6 +99,16 @@ class _HomePageState extends State<HomePage> {
     ];
     carregarImagem();
     _carregarDiasAtivos();
+    _ringController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ringController.dispose();
+    super.dispose();
   }
 
   Future<void> _carregarDiasAtivos() async {
@@ -555,14 +568,35 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ],
-              child: Container(
-                padding: const EdgeInsets.all(2.5),
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [_primary, _accent],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              child: AnimatedBuilder(
+                animation: _ringController,
+                builder: (context, child) => SizedBox(
+                  width: 43,
+                  height: 43,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Transform.rotate(
+                        angle: _ringController.value * 2 * math.pi,
+                        child: Container(
+                          width: 43,
+                          height: 43,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: SweepGradient(
+                              colors: [
+                                Colors.transparent,
+                                _accent,
+                                _primary,
+                                Colors.transparent,
+                              ],
+                              stops: [0.0, 0.2, 0.7, 1.0],
+                            ),
+                          ),
+                        ),
+                      ),
+                      child!,
+                    ],
                   ),
                 ),
                 child: CircleAvatar(
