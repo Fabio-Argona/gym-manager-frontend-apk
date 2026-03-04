@@ -44,6 +44,54 @@ String _getDiaSemana(DateTime data) {
   return diasSemana[data.weekday - 1];
 }
 
+// Cor de fundo sutil do card por grupo muscular
+Color _corCardGrupo(String? grupo) {
+  switch (grupo?.toLowerCase()) {
+    case 'peito':
+      return const Color(0xFF231E3A);
+    case 'costas':
+      return const Color(0xFF1A2035);
+    case 'pernas':
+      return const Color(0xFF1A2530);
+    case 'ombros':
+      return const Color(0xFF28202A);
+    case 'bíceps':
+      return const Color(0xFF281E1A);
+    case 'tríceps':
+      return const Color(0xFF1A2620);
+    case 'abdômen':
+      return const Color(0xFF272015);
+    case 'glúteos':
+      return const Color(0xFF28182A);
+    default:
+      return _cardEx;
+  }
+}
+
+// Cor do badge/tag por grupo muscular
+Color _corTagGrupo(String? grupo) {
+  switch (grupo?.toLowerCase()) {
+    case 'peito':
+      return const Color(0xFFA07AFF);
+    case 'costas':
+      return const Color(0xFF7AABFF);
+    case 'pernas':
+      return const Color(0xFF7ADFB8);
+    case 'ombros':
+      return const Color(0xFFFF9EA0);
+    case 'bíceps':
+      return const Color(0xFFFFCA7A);
+    case 'tríceps':
+      return const Color(0xFF90EE90);
+    case 'abdômen':
+      return const Color(0xFFFFE57A);
+    case 'glúteos':
+      return const Color(0xFFFF9BE0);
+    default:
+      return _textHint;
+  }
+}
+
 class _TreinosPageState extends State<TreinosPage> {
   List<Map<String, dynamic>> _grupos = [];
   final Set<String> _gruposExpandidos = {};
@@ -229,14 +277,24 @@ class _TreinosPageState extends State<TreinosPage> {
           .toList();
 
       listaExercicios.sort((a, b) {
-        final ga = a['grupoMuscular']?.toString() ?? '';
-        final gb = b['grupoMuscular']?.toString() ?? '';
+        final ga = (a['grupoMuscular'] ?? a['grupo_muscular'] ?? '')
+            .toString()
+            .toLowerCase();
+        final gb = (b['grupoMuscular'] ?? b['grupo_muscular'] ?? '')
+            .toString()
+            .toLowerCase();
+
+        int _prioridade(String g) {
+          if (g == 'peito') return 0;
+          if (g == 'costas') return 1;
+          return 2;
+        }
+
+        final pa = _prioridade(ga);
+        final pb = _prioridade(gb);
+        if (pa != pb) return pa.compareTo(pb);
         return ga.compareTo(gb);
       });
-
-      for (var ex in listaExercicios) {
-        ex.remove('grupoMuscular');
-      }
 
       grupo['exercicios'] = listaExercicios;
     }
@@ -468,7 +526,9 @@ class _TreinosPageState extends State<TreinosPage> {
       'Glúteos',
     ];
     String grupoSelecionado =
-        exercicio['grupoMuscular'] ?? gruposMusculares.first;
+        exercicio['grupoMuscular'] ??
+        exercicio['grupo_muscular'] ??
+        gruposMusculares.first;
 
     final confirmar = await showDialog<bool>(
       context: context,
@@ -1276,9 +1336,11 @@ class _TreinosPageState extends State<TreinosPage> {
             // Dropdown grupo muscular
             StatefulBuilder(
               builder: (context, setStateLocal) {
-                String selected = grupoInicial;
                 return DropdownButtonFormField<String>(
-                  value: selected,
+                  value: gruposMusculares.contains(grupoInicial)
+                      ? grupoInicial
+                      : gruposMusculares.first,
+                  key: ValueKey(grupoInicial),
                   dropdownColor: _inputBg,
                   style: const TextStyle(color: Colors.white, fontSize: 15),
                   decoration: InputDecoration(
@@ -1316,8 +1378,7 @@ class _TreinosPageState extends State<TreinosPage> {
                       )
                       .toList(),
                   onChanged: (v) {
-                    setStateLocal(() => selected = v ?? selected);
-                    onGrupoChanged(v);
+                    if (v != null) onGrupoChanged(v);
                   },
                 );
               },
@@ -1553,7 +1614,9 @@ class _TreinosPageState extends State<TreinosPage> {
                           opacity: concluidoHoje ? 0.45 : 1.0,
                           child: Container(
                             decoration: BoxDecoration(
-                              color: _cardEx,
+                              color: _corCardGrupo(
+                                ex['grupoMuscular'] ?? ex['grupo_muscular'],
+                              ),
                               border: Border.all(
                                 color: concluidoHoje
                                     ? _success.withOpacity(0.4)
@@ -1741,6 +1804,46 @@ class _TreinosPageState extends State<TreinosPage> {
                                         fontSize: 12,
                                       ),
                                     ),
+                                    if ((ex['grupoMuscular'] ??
+                                            ex['grupo_muscular']) !=
+                                        null) ...[
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _corTagGrupo(
+                                            ex['grupoMuscular'] ??
+                                                ex['grupo_muscular'],
+                                          ).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                          border: Border.all(
+                                            color: _corTagGrupo(
+                                              ex['grupoMuscular'] ??
+                                                  ex['grupo_muscular'],
+                                            ).withOpacity(0.25),
+                                            width: 0.8,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          ex['grupoMuscular'] ??
+                                              ex['grupo_muscular'] ??
+                                              '',
+                                          style: TextStyle(
+                                            color: _corTagGrupo(
+                                              ex['grupoMuscular'] ??
+                                                  ex['grupo_muscular'],
+                                            ).withOpacity(0.65),
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                     const Spacer(),
                                     const Icon(
                                       Icons.timer_outlined,
