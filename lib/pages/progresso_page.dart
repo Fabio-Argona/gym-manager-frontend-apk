@@ -423,9 +423,7 @@ class _ProgressoPageState extends State<ProgressoPage> {
 
   Widget _buildRecompensasCard() {
     final dias = _diasAtivos;
-    final nivel = _nivelAtual();
     final cor = _corNivel();
-    final icon = _iconNivel();
     final proximo = _proximoNivelDias();
 
     // Faixa do nível atual para barra de progresso
@@ -522,32 +520,6 @@ class _ProgressoPageState extends State<ProgressoPage> {
                   color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: cor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: cor.withOpacity(0.4)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(icon, color: cor, size: 13),
-                    const SizedBox(width: 4),
-                    Text(
-                      nivel,
-                      style: TextStyle(
-                        color: cor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ],
