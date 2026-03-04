@@ -327,10 +327,11 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildBiometriaButton(AuthService authService) {
     return OutlinedButton.icon(
       style: OutlinedButton.styleFrom(
-        foregroundColor: _textSub,
-        side: const BorderSide(color: _border, width: 1.5),
+        foregroundColor: _accent,
+        side: const BorderSide(color: _border, width: 1.2),
         padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
       ),
       onPressed: isLoading
           ? null
@@ -363,7 +364,7 @@ class _LoginPageState extends State<LoginPage> {
             },
       icon: const Icon(Icons.fingerprint_rounded, size: 20),
       label: const Text(
-        'Entrar com Biometria',
+        'Usar Biometria',
         style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
       ),
     );
@@ -384,15 +385,14 @@ class _LoginPageState extends State<LoginPage> {
             )
           : OutlinedButton(
               style: OutlinedButton.styleFrom(
-                foregroundColor: _textSub,
-                backgroundColor: Colors.grey[300],
-                side: const BorderSide(color: _border, width: 1.5),
+                foregroundColor: _accent,
+                side: const BorderSide(color: _border, width: 1.2),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 textStyle: const TextStyle(
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),
               ),
@@ -400,23 +400,9 @@ class _LoginPageState extends State<LoginPage> {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   if (constraints.maxWidth < 340) {
-                    return const Text(
-                      'Entrar',
-                      style: TextStyle(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                      ),
-                    );
+                    return const Text('Entrar');
                   }
-                  return Text(
-                    isLogin ? 'Entrar' : 'Criar conta',
-                    style: const TextStyle(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 14,
-                    ),
-                  );
+                  return Text(isLogin ? 'Entrar' : '  Criar conta  ');
                 },
               ),
             ),
