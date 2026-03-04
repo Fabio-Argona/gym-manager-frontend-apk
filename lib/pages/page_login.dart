@@ -603,29 +603,11 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildCredits() {
     return const Column(
       children: [
-        Divider(color: _border, thickness: 0.6),
-        SizedBox(height: 12),
+        SizedBox(height: 8),
         Text(
-          'Desenvolvido por',
+          'dev: Fabio Argona · Patricia Martins',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 11, color: _textHint, letterSpacing: 0.3),
-        ),
-        SizedBox(height: 4),
-        Text(
-          'Fabio Argona  ·  Patricia Martins',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: _textSub,
-            letterSpacing: 0.4,
-          ),
-        ),
-        SizedBox(height: 2),
-        Text(
-          'Engenheiros de Software',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 11, color: _textHint, letterSpacing: 0.3),
+          style: TextStyle(fontSize: 10, color: _border, letterSpacing: 0.3),
         ),
         SizedBox(height: 8),
       ],
