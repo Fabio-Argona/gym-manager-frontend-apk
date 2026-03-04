@@ -289,21 +289,21 @@ class _ProgressoPageState extends State<ProgressoPage> {
               color: _primary,
               backgroundColor: _card,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 children: [
                   _buildHeader(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   _buildRecompensasCard(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   _buildImcCard(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   _buildEvolucaoCard(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   _buildHistoricoCard(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   _buildGrupoMuscularChart(),
                   if (_objetivo.isNotEmpty || _nivel.isNotEmpty) ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
                     _buildObjetivoCard(),
                   ],
                 ],
@@ -1113,7 +1113,7 @@ class _ProgressoPageState extends State<ProgressoPage> {
           ),
         ],
       ),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       child: child,
     );
   }
