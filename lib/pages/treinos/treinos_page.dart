@@ -1585,386 +1585,460 @@ class _TreinosPageState extends State<TreinosPage> {
                   tooltip: 'Excluir',
                   onPressed: () => _excluirGrupo(grupoId, grupo['nome']),
                 ),
+                _iconBtn(
+                  icon: _gruposExpandidos.contains(grupoId)
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  color: _textHint,
+                  size: 20,
+                  tooltip: _gruposExpandidos.contains(grupoId)
+                      ? 'Recolher'
+                      : 'Expandir',
+                  onPressed: () => setState(() {
+                    if (_gruposExpandidos.contains(grupoId)) {
+                      _gruposExpandidos.remove(grupoId);
+                    } else {
+                      _gruposExpandidos.add(grupoId);
+                    }
+                  }),
+                ),
               ],
             ),
           ),
           Divider(thickness: 0.5, height: 1, color: _border.withOpacity(0.5)),
-          if (exercicios.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.info_outline_rounded, color: _textHint, size: 16),
-                  SizedBox(width: 8),
-                  Text(
-                    'Nenhum exercício neste grupo.',
-                    style: TextStyle(color: _textHint, fontSize: 13),
-                  ),
-                ],
+          if (_gruposExpandidos.contains(grupoId)) ...[
+            if (exercicios.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      color: _textHint,
+                      size: 16,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Nenhum exercício neste grupo.',
+                      style: TextStyle(color: _textHint, fontSize: 13),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          for (var ex in exercicios)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: Builder(
-                builder: (context) {
-                  final ultima = _ultimaConclusao[ex['id']];
-                  final hoje = DateTime.now();
-                  final concluidoHoje =
-                      ultima != null &&
-                      ultima.year == hoje.year &&
-                      ultima.month == hoje.month &&
-                      ultima.day == hoje.day;
-                  final emExecucao = _exerciciosEmExecucao[ex['id']] == true;
+            for (var ex in exercicios)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                child: Builder(
+                  builder: (context) {
+                    final ultima = _ultimaConclusao[ex['id']];
+                    final hoje = DateTime.now();
+                    final concluidoHoje =
+                        ultima != null &&
+                        ultima.year == hoje.year &&
+                        ultima.month == hoje.month &&
+                        ultima.day == hoje.day;
+                    final emExecucao = _exerciciosEmExecucao[ex['id']] == true;
 
-                  return Stack(
-                    children: [
-                      Opacity(
-                        opacity: concluidoHoje ? 0.45 : 1.0,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: _corCardGrupo(
-                              ex['grupoMuscular'] ?? ex['grupo_muscular'],
+                    return Stack(
+                      children: [
+                        Opacity(
+                          opacity: concluidoHoje ? 0.45 : 1.0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: _corCardGrupo(
+                                ex['grupoMuscular'] ?? ex['grupo_muscular'],
+                              ),
+                              border: Border.all(
+                                color: concluidoHoje
+                                    ? _success.withOpacity(0.4)
+                                    : emExecucao
+                                    ? _accent.withOpacity(0.4)
+                                    : _border.withOpacity(0.6),
+                                width: 1,
+                              ),
+                              borderRadius: BorderRadius.circular(14),
                             ),
-                            border: Border.all(
-                              color: concluidoHoje
-                                  ? _success.withOpacity(0.4)
-                                  : emExecucao
-                                  ? _accent.withOpacity(0.4)
-                                  : _border.withOpacity(0.6),
-                              width: 1,
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        width: 28,
-                                        height: 22,
-                                        child: IconButton(
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(),
-                                          icon: Icon(
-                                            Icons.keyboard_arrow_up_rounded,
-                                            size: 18,
-                                            color: exercicios.indexOf(ex) > 0
-                                                ? _textHint
-                                                : _textHint.withOpacity(0.2),
+                            padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(
+                                          width: 28,
+                                          height: 22,
+                                          child: IconButton(
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            icon: Icon(
+                                              Icons.keyboard_arrow_up_rounded,
+                                              size: 18,
+                                              color: exercicios.indexOf(ex) > 0
+                                                  ? _textHint
+                                                  : _textHint.withOpacity(0.2),
+                                            ),
+                                            onPressed:
+                                                exercicios.indexOf(ex) > 0
+                                                ? () => _reordenarExercicios(
+                                                    grupo,
+                                                    exercicios.indexOf(ex),
+                                                    exercicios.indexOf(ex) - 1,
+                                                  )
+                                                : null,
                                           ),
-                                          onPressed: exercicios.indexOf(ex) > 0
-                                              ? () => _reordenarExercicios(
-                                                  grupo,
-                                                  exercicios.indexOf(ex),
-                                                  exercicios.indexOf(ex) - 1,
-                                                )
-                                              : null,
                                         ),
-                                      ),
-                                      SizedBox(
-                                        width: 28,
-                                        height: 22,
-                                        child: IconButton(
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(),
-                                          icon: Icon(
-                                            Icons.keyboard_arrow_down_rounded,
-                                            size: 18,
-                                            color:
+                                        SizedBox(
+                                          width: 28,
+                                          height: 22,
+                                          child: IconButton(
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            icon: Icon(
+                                              Icons.keyboard_arrow_down_rounded,
+                                              size: 18,
+                                              color:
+                                                  exercicios.indexOf(ex) <
+                                                      exercicios.length - 1
+                                                  ? _textHint
+                                                  : _textHint.withOpacity(0.2),
+                                            ),
+                                            onPressed:
                                                 exercicios.indexOf(ex) <
                                                     exercicios.length - 1
-                                                ? _textHint
-                                                : _textHint.withOpacity(0.2),
+                                                ? () => _reordenarExercicios(
+                                                    grupo,
+                                                    exercicios.indexOf(ex),
+                                                    exercicios.indexOf(ex) + 1,
+                                                  )
+                                                : null,
                                           ),
-                                          onPressed:
-                                              exercicios.indexOf(ex) <
-                                                  exercicios.length - 1
-                                              ? () => _reordenarExercicios(
-                                                  grupo,
-                                                  exercicios.indexOf(ex),
-                                                  exercicios.indexOf(ex) + 1,
-                                                )
-                                              : null,
+                                        ),
+                                      ],
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        ex['nome'] ?? '',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 15,
+                                          color: emExecucao
+                                              ? _accent
+                                              : Colors.white,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    // Botão play / stop
+                                    if (emExecucao)
+                                      _iconBtn(
+                                        icon: Icons.stop_circle_rounded,
+                                        color: _error,
+                                        size: 20,
+                                        tooltip: 'Encerrar',
+                                        onPressed: () async {
+                                          await _mostrarDialogRegistroExercicio(
+                                            ex,
+                                            grupoId,
+                                            grupo['nome'] ?? '',
+                                          );
+                                        },
+                                      )
+                                    else if (concluidoHoje)
+                                      Tooltip(
+                                        message: 'Concluído hoje',
+                                        child: _iconBtn(
+                                          icon:
+                                              Icons.play_circle_outline_rounded,
+                                          color: _textHint,
+                                          size: 20,
+                                          onPressed: null,
+                                        ),
+                                      )
+                                    else
+                                      _iconBtn(
+                                        icon: Icons.play_circle_fill_rounded,
+                                        color: _accent,
+                                        size: 20,
+                                        tooltip: 'Iniciar',
+                                        onPressed: () async {
+                                          if (_treinoIdPorGrupo[grupoId] ==
+                                              null) {
+                                            final tid = await _iniciarTreino(
+                                              grupoId,
+                                              grupo['nome'] ?? '',
+                                            );
+                                            if (tid == null || !mounted) return;
+                                          }
+                                          final sucesso = await ExercicioService()
+                                              .atualizarStatus(
+                                                ex['treinoExercicioAlunoId'] ??
+                                                    ex['id'],
+                                                'EM_EXECUCAO',
+                                              );
+                                          if (sucesso) {
+                                            setState(() {
+                                              _exerciciosEmExecucao[ex['id']] =
+                                                  true;
+                                              _cronometros[ex['id']]?.cancel();
+                                              _cronometros[ex['id']] = Timer.periodic(
+                                                const Duration(seconds: 1),
+                                                (timer) {
+                                                  setState(() {
+                                                    _tempoExercicio[ex['id']] =
+                                                        (_tempoExercicio[ex['id']] ??
+                                                            0) +
+                                                        1;
+                                                  });
+                                                },
+                                              );
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    // Menu de ações
+                                    PopupMenuButton<String>(
+                                      icon: const Icon(
+                                        Icons.more_vert,
+                                        color: _textHint,
+                                        size: 20,
+                                      ),
+                                      color: _card,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: BorderSide(
+                                          color: _border.withOpacity(0.7),
+                                        ),
+                                      ),
+                                      itemBuilder: (context) => [
+                                        const PopupMenuItem(
+                                          value: 'editar',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.settings_outlined,
+                                                color: _primary,
+                                                size: 18,
+                                              ),
+                                              SizedBox(width: 10),
+                                              Text(
+                                                'Editar',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'excluir',
+                                          child: Row(
+                                            children: const [
+                                              Icon(
+                                                Icons.close_rounded,
+                                                color: _error,
+                                                size: 18,
+                                              ),
+                                              SizedBox(width: 10),
+                                              Text(
+                                                'Excluir',
+                                                style: TextStyle(color: _error),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                      onSelected: (value) {
+                                        if (value == 'editar') {
+                                          _editarExercicio(ex);
+                                        } else if (value == 'excluir') {
+                                          _confirmarExclusaoExercicio(ex);
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _primary.withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        '${ex['series']}x${ex['repeticoes']}',
+                                        style: const TextStyle(
+                                          color: _accent,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '${(ex['pesoInicial'] ?? 0.0).toStringAsFixed(1)} kg',
+                                      style: const TextStyle(
+                                        color: _textSub,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    if ((ex['grupoMuscular'] ??
+                                            ex['grupo_muscular']) !=
+                                        null) ...[
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _corTagGrupo(
+                                            ex['grupoMuscular'] ??
+                                                ex['grupo_muscular'],
+                                          ).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                          border: Border.all(
+                                            color: _corTagGrupo(
+                                              ex['grupoMuscular'] ??
+                                                  ex['grupo_muscular'],
+                                            ).withOpacity(0.25),
+                                            width: 0.8,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          ex['grupoMuscular'] ??
+                                              ex['grupo_muscular'] ??
+                                              '',
+                                          style: TextStyle(
+                                            color: _corTagGrupo(
+                                              ex['grupoMuscular'] ??
+                                                  ex['grupo_muscular'],
+                                            ).withOpacity(0.65),
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                    const Spacer(),
+                                    const Icon(
+                                      Icons.timer_outlined,
+                                      size: 13,
+                                      color: _primary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _tempoExercicio[ex['id']] != null
+                                          ? '${(_tempoExercicio[ex['id']]! ~/ 60).toString().padLeft(2, '0')}:${(_tempoExercicio[ex['id']]! % 60).toString().padLeft(2, '0')}'
+                                          : '00:00',
+                                      style: TextStyle(
+                                        color: emExecucao ? _accent : _textHint,
+                                        fontSize: 12,
+                                        fontWeight: emExecucao
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if ((ex['observacao'] ?? '').isNotEmpty) ...[
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '\u2139\uFE0F ${ex['observacao']}',
+                                    style: const TextStyle(
+                                      color: _textHint,
+                                      fontSize: 12,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (concluidoHoje)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                color: Colors.black.withOpacity(0.3),
+                              ),
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _success.withOpacity(0.9),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle_outline_rounded,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Concluído hoje',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
                                         ),
                                       ),
                                     ],
                                   ),
-                                  Expanded(
-                                    child: Text(
-                                      ex['nome'] ?? '',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 15,
-                                        color: emExecucao
-                                            ? _accent
-                                            : Colors.white,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  // Botão play / stop
-                                  if (emExecucao)
-                                    _iconBtn(
-                                      icon: Icons.stop_circle_rounded,
-                                      color: _error,
-                                      size: 20,
-                                      tooltip: 'Encerrar',
-                                      onPressed: () async {
-                                        await _mostrarDialogRegistroExercicio(
-                                          ex,
-                                          grupoId,
-                                          grupo['nome'] ?? '',
-                                        );
-                                      },
-                                    )
-                                  else if (concluidoHoje)
-                                    Tooltip(
-                                      message: 'Concluído hoje',
-                                      child: _iconBtn(
-                                        icon: Icons.play_circle_outline_rounded,
-                                        color: _textHint,
-                                        size: 20,
-                                        onPressed: null,
-                                      ),
-                                    )
-                                  else
-                                    _iconBtn(
-                                      icon: Icons.play_circle_fill_rounded,
-                                      color: _accent,
-                                      size: 20,
-                                      tooltip: 'Iniciar',
-                                      onPressed: () async {
-                                        if (_treinoIdPorGrupo[grupoId] ==
-                                            null) {
-                                          final tid = await _iniciarTreino(
-                                            grupoId,
-                                            grupo['nome'] ?? '',
-                                          );
-                                          if (tid == null || !mounted) return;
-                                        }
-                                        final sucesso = await ExercicioService()
-                                            .atualizarStatus(
-                                              ex['treinoExercicioAlunoId'] ??
-                                                  ex['id'],
-                                              'EM_EXECUCAO',
-                                            );
-                                        if (sucesso) {
-                                          setState(() {
-                                            _exerciciosEmExecucao[ex['id']] =
-                                                true;
-                                            _cronometros[ex['id']]?.cancel();
-                                            _cronometros[ex['id']] = Timer.periodic(
-                                              const Duration(seconds: 1),
-                                              (timer) {
-                                                setState(() {
-                                                  _tempoExercicio[ex['id']] =
-                                                      (_tempoExercicio[ex['id']] ??
-                                                          0) +
-                                                      1;
-                                                });
-                                              },
-                                            );
-                                          });
-                                        }
-                                      },
-                                    ),
-                                  // Botões editar/excluir
-                                  _iconBtn(
-                                    icon: Icons.settings_outlined,
-                                    color: _primary,
-                                    size: 18,
-                                    tooltip: 'Editar',
-                                    onPressed: () => _editarExercicio(ex),
-                                  ),
-                                  _iconBtn(
-                                    icon: Icons.close_rounded,
-                                    color: _error,
-                                    size: 18,
-                                    tooltip: 'Excluir',
-                                    onPressed: () =>
-                                        _confirmarExclusaoExercicio(ex),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _primary.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      '${ex['series']}x${ex['repeticoes']}',
-                                      style: const TextStyle(
-                                        color: _accent,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${(ex['pesoInicial'] ?? 0.0).toStringAsFixed(1)} kg',
-                                    style: const TextStyle(
-                                      color: _textSub,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  if ((ex['grupoMuscular'] ??
-                                          ex['grupo_muscular']) !=
-                                      null) ...[
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: _corTagGrupo(
-                                          ex['grupoMuscular'] ??
-                                              ex['grupo_muscular'],
-                                        ).withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(
-                                          color: _corTagGrupo(
-                                            ex['grupoMuscular'] ??
-                                                ex['grupo_muscular'],
-                                          ).withOpacity(0.25),
-                                          width: 0.8,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        ex['grupoMuscular'] ??
-                                            ex['grupo_muscular'] ??
-                                            '',
-                                        style: TextStyle(
-                                          color: _corTagGrupo(
-                                            ex['grupoMuscular'] ??
-                                                ex['grupo_muscular'],
-                                          ).withOpacity(0.65),
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                  const Spacer(),
-                                  const Icon(
-                                    Icons.timer_outlined,
-                                    size: 13,
-                                    color: _primary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _tempoExercicio[ex['id']] != null
-                                        ? '${(_tempoExercicio[ex['id']]! ~/ 60).toString().padLeft(2, '0')}:${(_tempoExercicio[ex['id']]! % 60).toString().padLeft(2, '0')}'
-                                        : '00:00',
-                                    style: TextStyle(
-                                      color: emExecucao ? _accent : _textHint,
-                                      fontSize: 12,
-                                      fontWeight: emExecucao
-                                          ? FontWeight.w600
-                                          : FontWeight.normal,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if ((ex['observacao'] ?? '').isNotEmpty) ...[
-                                const SizedBox(height: 6),
-                                Text(
-                                  '\u2139\uFE0F ${ex['observacao']}',
-                                  style: const TextStyle(
-                                    color: _textHint,
-                                    fontSize: 12,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (concluidoHoje)
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(14),
-                              color: Colors.black.withOpacity(0.3),
-                            ),
-                            child: Center(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _success.withOpacity(0.9),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.check_circle_outline_rounded,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      'Concluído hoje',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                    ],
-                  );
-                },
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Adicionar Exercício'),
-                onPressed: () => _adicionarExercicio(grupoId),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: _accent,
-                  side: const BorderSide(color: _border, width: 1.2),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  textStyle: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('Adicionar Exercício'),
+                  onPressed: () => _adicionarExercicio(grupoId),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _accent,
+                    side: const BorderSide(color: _border, width: 1.2),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+          ], // fecha if (_gruposExpandidos.contains(grupoId))
         ],
       ),
     );
@@ -2057,7 +2131,7 @@ class _TreinosPageState extends State<TreinosPage> {
                         if (constraints.maxWidth < 340) {
                           return const SizedBox.shrink(); // só ícone
                         }
-                        return const Text('Novo Grupo');
+                        return const Text('Novo Treino');
                       },
                     ),
                     onPressed: _criarGrupo,
