@@ -51,7 +51,7 @@ dev_dependencies:
   # Ícones personalizados
   flutter_launcher_icons: ^0.13.1
 
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icon/icon.png"
