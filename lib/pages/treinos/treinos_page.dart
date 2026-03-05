@@ -94,7 +94,7 @@ Color _corTagGrupo(String? grupo) {
 
 class _TreinosPageState extends State<TreinosPage> {
   List<Map<String, dynamic>> _grupos = [];
-
+  final Set<String> _gruposExpandidos = {};
   bool _carregando = true;
   final Map<String, bool> _exerciciosEmExecucao = {};
 
@@ -1525,7 +1525,6 @@ class _TreinosPageState extends State<TreinosPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ─── Cabeçalho fixo do grupo ───────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
@@ -1715,6 +1714,7 @@ class _TreinosPageState extends State<TreinosPage> {
                                     _iconBtn(
                                       icon: Icons.stop_circle_rounded,
                                       color: _error,
+                                      size: 20,
                                       tooltip: 'Encerrar',
                                       onPressed: () async {
                                         await _mostrarDialogRegistroExercicio(
@@ -1730,6 +1730,7 @@ class _TreinosPageState extends State<TreinosPage> {
                                       child: _iconBtn(
                                         icon: Icons.play_circle_outline_rounded,
                                         color: _textHint,
+                                        size: 20,
                                         onPressed: null,
                                       ),
                                     )
@@ -1737,6 +1738,7 @@ class _TreinosPageState extends State<TreinosPage> {
                                     _iconBtn(
                                       icon: Icons.play_circle_fill_rounded,
                                       color: _accent,
+                                      size: 20,
                                       tooltip: 'Iniciar',
                                       onPressed: () async {
                                         if (_treinoIdPorGrupo[grupoId] ==
@@ -1757,7 +1759,6 @@ class _TreinosPageState extends State<TreinosPage> {
                                           setState(() {
                                             _exerciciosEmExecucao[ex['id']] =
                                                 true;
-                                            _tempoExercicio[ex['id']] = 0;
                                             _cronometros[ex['id']]?.cancel();
                                             _cronometros[ex['id']] = Timer.periodic(
                                               const Duration(seconds: 1),
@@ -1994,12 +1995,16 @@ class _TreinosPageState extends State<TreinosPage> {
     String? tooltip,
     double size = 26,
   }) {
-    final btn = IconButton(
-      icon: Icon(icon, color: color, size: size),
-      onPressed: onPressed,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(),
-      splashRadius: 20,
+    final btn = SizedBox(
+      width: size + 4,
+      height: size + 4,
+      child: IconButton(
+        icon: Icon(icon, color: color, size: size),
+        onPressed: onPressed,
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        splashRadius: 16,
+      ),
     );
     return tooltip != null ? Tooltip(message: tooltip, child: btn) : btn;
   }

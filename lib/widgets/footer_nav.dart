@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 const _bg2 = Color(0xFF1A1040);
 const _card = Color(0xFF1C1B2E);
 const _primary = Color(0xFF7C3AED);
-const _accent = Color(0xFF06B6D4);
 const _error = Color(0xFFEF4444);
 const _border = Color(0xFF3A3857);
 const _textHint = Color(0xFF8884A8);
