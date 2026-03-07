@@ -212,7 +212,7 @@ class _GrupoHeader extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      '$count exercício${count == 1 ? '' : 's'}',
+                      '$count exerc.',
                       style: TextStyle(color: c.textHint, fontSize: 12),
                     ),
                     const SizedBox(width: 10),
