@@ -52,6 +52,15 @@ class GrupoCard extends StatelessWidget {
     final count = exercicios.length;
     final tempoLabel = _buildTempoLabel(grupoId, exercicios, count);
 
+    final hoje = DateTime.now();
+    final concluidosHoje = exercicios.where((ex) {
+      final ultima = ultimaConclusao[ex['id']];
+      return ultima != null &&
+          ultima.year == hoje.year &&
+          ultima.month == hoje.month &&
+          ultima.day == hoje.day;
+    }).length;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
@@ -72,6 +81,7 @@ class GrupoCard extends StatelessWidget {
           _GrupoHeader(
             nome: grupo['nome'] ?? 'Grupo sem nome',
             count: count,
+            concluidosHoje: concluidosHoje,
             tempoLabel: tempoLabel,
             expandido: expandido,
             onEditar: onEditar,
@@ -153,6 +163,7 @@ class GrupoCard extends StatelessWidget {
 class _GrupoHeader extends StatelessWidget {
   final String nome;
   final int count;
+  final int concluidosHoje;
   final String tempoLabel;
   final bool expandido;
   final VoidCallback onEditar;
@@ -162,6 +173,7 @@ class _GrupoHeader extends StatelessWidget {
   const _GrupoHeader({
     required this.nome,
     required this.count,
+    required this.concluidosHoje,
     required this.tempoLabel,
     required this.expandido,
     required this.onEditar,
@@ -172,6 +184,13 @@ class _GrupoHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    final pct = count > 0 ? concluidosHoje / count : 0.0;
+    final completo = count > 0 && concluidosHoje == count;
+    final corPct = completo
+        ? c.success
+        : concluidosHoje > 0
+        ? c.accent
+        : c.textHint;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
@@ -203,8 +222,47 @@ class _GrupoHeader extends StatelessWidget {
                       tempoLabel,
                       style: TextStyle(color: c.textHint, fontSize: 12),
                     ),
+                    if (count > 0) ...[
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: corPct.withValues(alpha: 0.13),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: corPct.withValues(alpha: 0.4),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          completo
+                              ? '✓ 100%'
+                              : '$concluidosHoje/$count · ${(pct * 100).toInt()}%',
+                          style: TextStyle(
+                            color: corPct,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
+                if (count > 0) ...[
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: pct,
+                      minHeight: 3,
+                      backgroundColor: c.border.withValues(alpha: 0.35),
+                      valueColor: AlwaysStoppedAnimation<Color>(corPct),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

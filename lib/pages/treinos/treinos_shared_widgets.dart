@@ -75,7 +75,7 @@ Widget buildField(
     keyboardType: keyboardType,
     maxLines: maxLines,
     textCapitalization: capitalization,
-    style: TextStyle(color: Colors.white, fontSize: 15),
+    style: TextStyle(color: c.textSub, fontSize: 15),
     cursorColor: c.primary,
     decoration: InputDecoration(
       labelText: label,

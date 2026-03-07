@@ -38,6 +38,9 @@ dependencies:
   # Autenticação por impressão digital
   local_auth: ^2.1.0
 
+  # Gráficos
+  fl_chart: ^0.70.2
+
   # Deep links (recuperação de senha via email)
   app_links: ^6.3.3
   

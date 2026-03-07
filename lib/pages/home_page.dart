@@ -84,7 +84,20 @@ class _HomePageState extends State<HomePage>
   void initState() {
     super.initState();
     _pages = [
-      TreinosPage(nome: widget.nome),
+      TreinosPage(
+        nome: widget.nome,
+        onTreinoIniciado: () {
+          final hoje = DateTime.now();
+          final dataStr =
+              '${hoje.year}-${hoje.month.toString().padLeft(2, '0')}-${hoje.day.toString().padLeft(2, '0')}';
+          if (!_datasAtivas.contains(dataStr)) {
+            setState(() {
+              _datasAtivas = {..._datasAtivas, dataStr};
+              _diasAtivos = _datasAtivas.length;
+            });
+          }
+        },
+      ),
       const ProgressoPage(),
       const ProfilePage(),
     ];
@@ -311,7 +324,9 @@ class _HomePageState extends State<HomePage>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _WeekStrip(datasAtivas: _datasAtivas),
-              Expanded(child: _pages[_selectedIndex]),
+              Expanded(
+                child: IndexedStack(index: _selectedIndex, children: _pages),
+              ),
             ],
           ),
         ),
@@ -575,54 +590,49 @@ class _AvatarMenu extends StatelessWidget {
           ),
         ),
       ],
-      child: AnimatedBuilder(
-        animation: ringController,
-        builder: (context, child) => SizedBox(
-          width: 43,
-          height: 43,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Transform.rotate(
-                angle: ringController.value * 2 * math.pi,
-                child: Container(
-                  width: 43,
-                  height: 43,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: SweepGradient(
-                      colors: [
-                        Colors.transparent,
-                        c.accent,
-                        c.primary,
-                        Colors.transparent,
-                      ],
-                      stops: [0.0, 0.2, 0.7, 1.0],
-                    ),
-                  ),
+      child: SizedBox(
+        width: 43,
+        height: 43,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 43,
+              height: 43,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: SweepGradient(
+                  colors: [
+                    Colors.transparent,
+                    c.accent,
+                    c.primary,
+                    Colors.transparent,
+                  ],
+                  stops: [0.0, 0.2, 0.7, 1.0],
                 ),
               ),
-              child!,
-            ],
-          ),
-        ),
-        child: CircleAvatar(
-          radius: 19,
-          backgroundColor: c.card,
-          backgroundImage: imagemUrl != null ? NetworkImage(imagemUrl!) : null,
-          onBackgroundImageError: imagemUrl != null
-              ? (_, __) => onImageError()
-              : null,
-          child: imagemUrl == null
-              ? Text(
-                  nome.isNotEmpty ? nome[0].toUpperCase() : '?',
-                  style: TextStyle(
-                    color: c.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                )
-              : null,
+            ),
+            CircleAvatar(
+              radius: 19,
+              backgroundColor: c.card,
+              backgroundImage: imagemUrl != null
+                  ? NetworkImage(imagemUrl!)
+                  : null,
+              onBackgroundImageError: imagemUrl != null
+                  ? (_, __) => onImageError()
+                  : null,
+              child: imagemUrl == null
+                  ? Text(
+                      nome.isNotEmpty ? nome[0].toUpperCase() : '?',
+                      style: TextStyle(
+                        color: c.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    )
+                  : null,
+            ),
+          ],
         ),
       ),
     );

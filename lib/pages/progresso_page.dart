@@ -1,4 +1,6 @@
 ﻿import 'dart:convert';
+import 'dart:math' as math;
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -21,6 +23,9 @@ class _ProgressoPageState extends State<ProgressoPage> {
   String _nome = '';
   String _objetivo = '';
   String _nivel = '';
+
+  // ID do aluno logado
+  String _alunoId = '';
 
   // Evoluções (lista, ordenada por data asc)
   List<Map<String, dynamic>> _evolucoes = [];
@@ -51,6 +56,7 @@ class _ProgressoPageState extends State<ProgressoPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final alunoId = prefs.getString('alunoId') ?? '';
+      _alunoId = alunoId;
       final token = prefs.getString('token') ?? '';
       if (alunoId.isEmpty || token.isEmpty) {
         setState(() {
@@ -90,7 +96,24 @@ class _ProgressoPageState extends State<ProgressoPage> {
       // Evoluções
       if (results[1].statusCode == 200) {
         final lista = jsonDecode(results[1].body) as List;
-        _evolucoes = lista.cast<Map<String, dynamic>>();
+        _evolucoes = lista.map((e) {
+          final m = Map<String, dynamic>.from(e as Map);
+          // Normaliza o campo 'data': pode vir como [ano,mes,dia] ou "yyyy-MM-dd"
+          final raw = m['data'];
+          if (raw is List && raw.length >= 3) {
+            final y = raw[0].toString().padLeft(4, '0');
+            final mo = raw[1].toString().padLeft(2, '0');
+            final d = raw[2].toString().padLeft(2, '0');
+            m['data'] = '$y-$mo-$d';
+          }
+          return m;
+        }).toList();
+        // Garante ordem ascendente por data
+        _evolucoes.sort(
+          (a, b) => (a['data']?.toString() ?? '').compareTo(
+            b['data']?.toString() ?? '',
+          ),
+        );
       }
 
       // Sessões
@@ -297,6 +320,8 @@ class _ProgressoPageState extends State<ProgressoPage> {
                 children: [
                   _buildHeader(),
                   const SizedBox(height: 10),
+                  _buildHistoricoCard(),
+                  const SizedBox(height: 10),
                   _buildRecompensasCard(),
                   const SizedBox(height: 10),
                   _buildCalendario(),
@@ -308,13 +333,11 @@ class _ProgressoPageState extends State<ProgressoPage> {
                     const SizedBox(height: 10),
                     _buildEvolucaoCard(),
                   ],
-                  const SizedBox(height: 10),
-                  _buildHistoricoCard(),
                   if (_grupoCount.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     _buildGrupoMuscularChart(),
                   ],
-                  if (_objetivo.isNotEmpty || _nivel.isNotEmpty) ...[
+                  if (_objetivo.isNotEmpty || _diasAtivos >= 0) ...[
                     const SizedBox(height: 10),
                     _buildObjetivoCard(),
                   ],
@@ -945,7 +968,8 @@ class _ProgressoPageState extends State<ProgressoPage> {
               ),
             );
           }),
-          if (_evolucoes.length > 1)
+          if (_evolucoes.length > 1) ...[
+            _buildEvolucaoChart('peso', c.accent, 'kg'),
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
@@ -953,8 +977,240 @@ class _ProgressoPageState extends State<ProgressoPage> {
                 style: TextStyle(color: c.textHint, fontSize: 11),
               ),
             ),
+          ] else
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, size: 14, color: c.textHint),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Adicione mais medições para ver o gráfico',
+                    style: TextStyle(color: c.textHint, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
+    );
+  }
+
+  Future<void> _showNovaMedicaoDialog() async {
+    final c = AppColors.of(context);
+    final u = _ultimaEvolucao;
+    // Pré-preenche com os valores da última medição
+    final pesoCtrl = TextEditingController(text: u?['peso']?.toString() ?? '');
+    final alturaCtrl = TextEditingController(
+      text: u?['altura']?.toString() ?? '',
+    );
+    final gorduraCtrl = TextEditingController(
+      text: u?['percentualGordura']?.toString() ?? '',
+    );
+    final musculoCtrl = TextEditingController(
+      text: u?['percentualMusculo']?.toString() ?? '',
+    );
+    final cinturaCtrl = TextEditingController(
+      text: u?['cintura']?.toString() ?? '',
+    );
+    final abdomenCtrl = TextEditingController(
+      text: u?['abdomen']?.toString() ?? '',
+    );
+    final quadrilCtrl = TextEditingController(
+      text: u?['quadril']?.toString() ?? '',
+    );
+    final peitoCtrl = TextEditingController(
+      text: u?['peito']?.toString() ?? '',
+    );
+    final bracoDirCtrl = TextEditingController(
+      text: u?['bracoDireito']?.toString() ?? '',
+    );
+    final bracoEsqCtrl = TextEditingController(
+      text: u?['bracoEsquerdo']?.toString() ?? '',
+    );
+    final coxaDirCtrl = TextEditingController(
+      text: u?['coxaDireita']?.toString() ?? '',
+    );
+    final coxaEsqCtrl = TextEditingController(
+      text: u?['coxaEsquerda']?.toString() ?? '',
+    );
+    bool salvando = false;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: c.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            InputDecoration dec(String label) => InputDecoration(
+              labelText: label,
+              labelStyle: TextStyle(color: c.textHint, fontSize: 13),
+              filled: true,
+              fillColor: c.inputBg,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: c.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: c.border),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
+            );
+
+            Widget field(TextEditingController ctrl, String label) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: TextField(
+                controller: ctrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                style: TextStyle(color: c.textSub, fontSize: 14),
+                decoration: dec(label),
+              ),
+            );
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: c.border,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Nova Medição',
+                      style: TextStyle(
+                        color: c.textSub,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    field(pesoCtrl, 'Peso (kg)'),
+                    field(alturaCtrl, 'Altura (cm)'),
+                    field(gorduraCtrl, '% Gordura'),
+                    field(musculoCtrl, '% Músculo'),
+                    field(cinturaCtrl, 'Cintura (cm)'),
+                    field(abdomenCtrl, 'Abdômen (cm)'),
+                    field(quadrilCtrl, 'Quadril (cm)'),
+                    field(peitoCtrl, 'Peito (cm)'),
+                    field(bracoDirCtrl, 'Braço Direito (cm)'),
+                    field(bracoEsqCtrl, 'Braço Esquerdo (cm)'),
+                    field(coxaDirCtrl, 'Coxa Direita (cm)'),
+                    field(coxaEsqCtrl, 'Coxa Esquerda (cm)'),
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: salvando
+                            ? null
+                            : () async {
+                                setModalState(() => salvando = true);
+                                try {
+                                  final prefs =
+                                      await SharedPreferences.getInstance();
+                                  final token = prefs.getString('token') ?? '';
+                                  final body = jsonEncode({
+                                    'alunoId': _alunoId,
+                                    'peso': double.tryParse(pesoCtrl.text),
+                                    'altura': double.tryParse(alturaCtrl.text),
+                                    'percentualGordura': double.tryParse(
+                                      gorduraCtrl.text,
+                                    ),
+                                    'percentualMusculo': double.tryParse(
+                                      musculoCtrl.text,
+                                    ),
+                                    'cintura': double.tryParse(
+                                      cinturaCtrl.text,
+                                    ),
+                                    'abdomen': double.tryParse(
+                                      abdomenCtrl.text,
+                                    ),
+                                    'quadril': double.tryParse(
+                                      quadrilCtrl.text,
+                                    ),
+                                    'peito': double.tryParse(peitoCtrl.text),
+                                    'bracoDireito': double.tryParse(
+                                      bracoDirCtrl.text,
+                                    ),
+                                    'bracoEsquerdo': double.tryParse(
+                                      bracoEsqCtrl.text,
+                                    ),
+                                    'coxaDireita': double.tryParse(
+                                      coxaDirCtrl.text,
+                                    ),
+                                    'coxaEsquerda': double.tryParse(
+                                      coxaEsqCtrl.text,
+                                    ),
+                                  });
+                                  final res = await http.post(
+                                    Uri.parse('$baseUrl/evolucoes'),
+                                    headers: {
+                                      'Content-Type': 'application/json',
+                                      'Authorization': 'Bearer $token',
+                                    },
+                                    body: body,
+                                  );
+                                  if (res.statusCode == 200 ||
+                                      res.statusCode == 201) {
+                                    if (ctx.mounted) Navigator.pop(ctx);
+                                    _carregar();
+                                  } else {
+                                    setModalState(() => salvando = false);
+                                  }
+                                } catch (_) {
+                                  setModalState(() => salvando = false);
+                                }
+                              },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: c.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: salvando
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('Salvar Medição'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1029,6 +1285,100 @@ class _ProgressoPageState extends State<ProgressoPage> {
             ),
           ),
       ],
+    );
+  }
+
+  // ─── Evolução Chart ──────────────────────────────────────────────────────────
+
+  Widget _buildEvolucaoChart(String campo, Color color, String unidade) {
+    if (_evolucoes.length < 2) return const SizedBox.shrink();
+    final c = AppColors.of(context);
+    final spots = <FlSpot>[];
+    for (int i = 0; i < _evolucoes.length; i++) {
+      final val = (_evolucoes[i][campo] as num?)?.toDouble() ?? 0;
+      if (val > 0) spots.add(FlSpot(i.toDouble(), val));
+    }
+    if (spots.length < 2) return const SizedBox.shrink();
+    final minY = spots.map((s) => s.y).reduce(math.min);
+    final maxY = spots.map((s) => s.y).reduce(math.max);
+    final pad = (maxY - minY) * 0.15 + 0.5;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 4),
+      child: SizedBox(
+        height: 130,
+        child: LineChart(
+          LineChartData(
+            minY: minY - pad,
+            maxY: maxY + pad,
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: false,
+              getDrawingHorizontalLine: (_) =>
+                  FlLine(color: c.border.withOpacity(0.25), strokeWidth: 1),
+            ),
+            borderData: FlBorderData(show: false),
+            titlesData: FlTitlesData(
+              leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 46,
+                  getTitlesWidget: (v, meta) {
+                    if (v == meta.min || v == meta.max) {
+                      return const SizedBox.shrink();
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Text(
+                        '${v.toStringAsFixed(1)}$unidade',
+                        style: TextStyle(color: c.textHint, fontSize: 9),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 22,
+                  interval: math.max(1, (_evolucoes.length / 4).ceilToDouble()),
+                  getTitlesWidget: (x, _) {
+                    final idx = x.toInt();
+                    if (idx < 0 ||
+                        idx >= _evolucoes.length ||
+                        x != x.floorToDouble()) {
+                      return const SizedBox.shrink();
+                    }
+                    final raw = _evolucoes[idx]['data']?.toString() ?? '';
+                    final parts = raw.split('-');
+                    final label = parts.length >= 3
+                        ? '${parts[2].padLeft(2, "0")}/${parts[1]}'
+                        : '';
+                    return Text(
+                      label,
+                      style: TextStyle(color: c.textHint, fontSize: 9),
+                    );
+                  },
+                ),
+              ),
+            ),
+            lineBarsData: [
+              LineChartBarData(
+                spots: spots,
+                isCurved: true,
+                color: color,
+                barWidth: 2.5,
+                dotData: FlDotData(show: spots.length <= 7),
+                belowBarData: BarAreaData(
+                  show: true,
+                  color: color.withOpacity(0.08),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1232,7 +1582,108 @@ class _ProgressoPageState extends State<ProgressoPage> {
               ),
             );
           }),
+          _buildGrupoMuscularBarChart(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGrupoMuscularBarChart() {
+    final c = AppColors.of(context);
+    final grupos = _grupoCount;
+    if (grupos.isEmpty) return const SizedBox.shrink();
+    final entries = grupos.entries.toList();
+    final maxVal = entries.first.value.toDouble();
+
+    final barGroups = List.generate(entries.length, (i) {
+      final cor = _barColors[i % _barColors.length];
+      return BarChartGroupData(
+        x: i,
+        barRods: [
+          BarChartRodData(
+            toY: entries[i].value.toDouble(),
+            gradient: LinearGradient(
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+              colors: [cor.withOpacity(0.7), cor],
+            ),
+            width: 16,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+            backDrawRodData: BackgroundBarChartRodData(
+              show: true,
+              toY: maxVal * 1.25,
+              color: c.inputBg,
+            ),
+          ),
+        ],
+      );
+    });
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 4),
+      child: SizedBox(
+        height: 140,
+        child: BarChart(
+          BarChartData(
+            maxY: maxVal * 1.25,
+            barGroups: barGroups,
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: false,
+              getDrawingHorizontalLine: (_) =>
+                  FlLine(color: c.border.withOpacity(0.25), strokeWidth: 1),
+            ),
+            borderData: FlBorderData(show: false),
+            titlesData: FlTitlesData(
+              leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 28,
+                  getTitlesWidget: (v, meta) {
+                    if (v == meta.min || v == meta.max) {
+                      return const SizedBox.shrink();
+                    }
+                    if (v != v.floorToDouble()) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Text(
+                        v.toInt().toString(),
+                        style: TextStyle(color: c.textHint, fontSize: 9),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 28,
+                  getTitlesWidget: (x, _) {
+                    final idx = x.toInt();
+                    if (idx < 0 || idx >= entries.length) {
+                      return const SizedBox.shrink();
+                    }
+                    final nome = entries[idx].key;
+                    final abrev = nome.length > 7
+                        ? '${nome.substring(0, 6)}.'
+                        : nome;
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        abrev,
+                        style: TextStyle(color: c.textHint, fontSize: 8),
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            barTouchData: BarTouchData(enabled: false),
+          ),
+        ),
       ),
     );
   }
@@ -1241,6 +1692,10 @@ class _ProgressoPageState extends State<ProgressoPage> {
 
   Widget _buildObjetivoCard() {
     final c = AppColors.of(context);
+    final nivelCalculado = _nivelAtual();
+    final corNivel = _corNivel();
+    final iconNivel = _iconNivel();
+    final proximo = _proximoNivel();
     return _sectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1254,12 +1709,71 @@ class _ProgressoPageState extends State<ProgressoPage> {
               _objetivo,
               c.warning,
             ),
-          if (_nivel.isNotEmpty) ...[
-            if (_objetivo.isNotEmpty) const SizedBox(height: 10),
-            _infoRow(Icons.trending_up_rounded, 'Nível', _nivel, c.accent),
+          if (_objetivo.isNotEmpty) const SizedBox(height: 10),
+          _infoRow(iconNivel, 'Nível', nivelCalculado, corNivel),
+          const SizedBox(height: 10),
+          _infoRow(
+            Icons.calendar_today_outlined,
+            'Dias Treinados',
+            '$_diasAtivos dias',
+            c.primary,
+          ),
+          if (proximo != null) ...[
+            const SizedBox(height: 10),
+            _nivelProgressBar(proximo, corNivel, c),
           ],
         ],
       ),
+    );
+  }
+
+  ({String nome, int atual, int meta})? _proximoNivel() {
+    for (int i = 0; i < _limitesNivel.length - 1; i++) {
+      if (_diasAtivos < _limitesNivel[i + 1]) {
+        return (
+          nome: _nomesNivel[i + 1],
+          atual: _diasAtivos - _limitesNivel[i],
+          meta: _limitesNivel[i + 1] - _limitesNivel[i],
+        );
+      }
+    }
+    return null;
+  }
+
+  Widget _nivelProgressBar(
+    ({String nome, int atual, int meta}) proximo,
+    Color cor,
+    AppColors c,
+  ) {
+    final progresso = (proximo.atual / proximo.meta).clamp(0.0, 1.0);
+    final faltam = proximo.meta - proximo.atual;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Próximo: ${proximo.nome}',
+              style: TextStyle(color: c.textHint, fontSize: 11),
+            ),
+            Text(
+              'Faltam $faltam dias',
+              style: TextStyle(color: c.textHint, fontSize: 11),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: progresso,
+            backgroundColor: cor.withOpacity(0.15),
+            valueColor: AlwaysStoppedAnimation<Color>(cor),
+            minHeight: 6,
+          ),
+        ),
+      ],
     );
   }
 

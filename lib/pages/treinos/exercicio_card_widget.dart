@@ -317,7 +317,7 @@ class _ExercicioMenu extends StatelessWidget {
             children: [
               Icon(Icons.build_outlined, color: c.primary, size: 18),
               SizedBox(width: 10),
-              Text('Editar', style: TextStyle(color: Colors.white)),
+              Text('Editar', style: TextStyle(color: c.textSub)),
             ],
           ),
         ),
@@ -383,17 +383,13 @@ class _MuscleGroupTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: cor.withValues(alpha: 0.1),
+        color: cor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: cor.withValues(alpha: 0.25), width: 0.8),
+        border: Border.all(color: cor.withValues(alpha: 0.5), width: 1),
       ),
       child: Text(
         grupo,
-        style: TextStyle(
-          color: cor.withValues(alpha: 0.65),
-          fontSize: 10,
-          fontWeight: FontWeight.w500,
-        ),
+        style: TextStyle(color: cor, fontSize: 10, fontWeight: FontWeight.w600),
       ),
     );
   }

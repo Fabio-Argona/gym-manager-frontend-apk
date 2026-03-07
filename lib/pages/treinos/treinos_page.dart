@@ -13,7 +13,8 @@ import 'grupo_card_widget.dart';
 
 class TreinosPage extends StatefulWidget {
   final String nome;
-  const TreinosPage({super.key, required this.nome});
+  final VoidCallback? onTreinoIniciado;
+  const TreinosPage({super.key, required this.nome, this.onTreinoIniciado});
 
   @override
   State<TreinosPage> createState() => _TreinosPageState();
@@ -438,6 +439,7 @@ class _TreinosPageState extends State<TreinosPage> {
 
     if (treinoId != null) {
       _treinoIdPorGrupo[grupoId] = treinoId;
+      widget.onTreinoIniciado?.call();
       return treinoId;
     }
     if (mounted) {
@@ -456,6 +458,11 @@ class _TreinosPageState extends State<TreinosPage> {
     String grupoNome,
   ) async {
     if (_treinoIdPorGrupo[grupoId] == null) {
+      final confirmar = await showDialog<bool>(
+        context: context,
+        builder: (_) => IniciarTreinoDialog(grupoNome: grupoNome),
+      );
+      if (confirmar != true || !mounted) return;
       final tid = await _iniciarTreino(grupoId, grupoNome);
       if (tid == null || !mounted) return;
     }
@@ -542,6 +549,30 @@ class _TreinosPageState extends State<TreinosPage> {
       _cronometros[ex['id']] = null;
     });
     await _salvarConclusao(ex['id']);
+
+    // Verifica se todos os exercícios do grupo foram concluídos hoje
+    if (!mounted) return;
+    final grupo = _grupos.firstWhere(
+      (g) => g['id']?.toString() == grupoId,
+      orElse: () => <String, dynamic>{},
+    );
+    final exerciciosGrupo = (grupo['exercicios'] as List? ?? [])
+        .where((e) => e['ativo'] == true)
+        .cast<Map<String, dynamic>>()
+        .toList();
+    final agora = DateTime.now();
+    final allDone =
+        exerciciosGrupo.isNotEmpty &&
+        exerciciosGrupo.every((e) {
+          final ultima = _ultimaConclusao[e['id']];
+          return ultima != null &&
+              ultima.year == agora.year &&
+              ultima.month == agora.month &&
+              ultima.day == agora.day;
+        });
+    if (allDone && mounted) {
+      await showTreinoConcluidoOverlay(context, grupoNome);
+    }
   }
 
   Future<void> _salvarRegistroExercicio(

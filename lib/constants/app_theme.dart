@@ -115,25 +115,50 @@ Color cardColorByMuscleGroup(String? grupo, AppColors c) {
 
 /// Cor do badge/tag por grupo muscular.
 Color tagColorByMuscleGroup(String? grupo, AppColors c) {
-  switch (grupo?.toLowerCase()) {
-    case 'peito':
-      return const Color(0xFFA07AFF);
-    case 'costas':
-      return const Color(0xFF7AABFF);
-    case 'pernas':
-      return const Color(0xFF7ADFB8);
-    case 'ombros':
-      return const Color(0xFFFF9EA0);
-    case 'bíceps':
-      return const Color(0xFFFFCA7A);
-    case 'tríceps':
-      return const Color(0xFF90EE90);
-    case 'abdômen':
-      return const Color(0xFFFFE57A);
-    case 'glúteos':
-      return const Color(0xFFFF9BE0);
-    default:
-      return c.textHint;
+  final isDark = c.bg1.computeLuminance() < 0.5;
+  if (isDark) {
+    switch (grupo?.toLowerCase()) {
+      case 'peito':
+        return const Color(0xFFA07AFF);
+      case 'costas':
+        return const Color(0xFF7AABFF);
+      case 'pernas':
+        return const Color(0xFF7ADFB8);
+      case 'ombros':
+        return const Color(0xFFFF9EA0);
+      case 'bíceps':
+        return const Color(0xFFFFCA7A);
+      case 'tríceps':
+        return const Color(0xFF90EE90);
+      case 'abdômen':
+        return const Color(0xFFFFE57A);
+      case 'glúteos':
+        return const Color(0xFFFF9BE0);
+      default:
+        return c.textHint;
+    }
+  } else {
+    // Modo claro: cores mais escuras e saturadas para garantir contraste
+    switch (grupo?.toLowerCase()) {
+      case 'peito':
+        return const Color(0xFF6B3FD4);
+      case 'costas':
+        return const Color(0xFF1A6FD4);
+      case 'pernas':
+        return const Color(0xFF178A5A);
+      case 'ombros':
+        return const Color(0xFFD43040);
+      case 'bíceps':
+        return const Color(0xFFB86A00);
+      case 'tríceps':
+        return const Color(0xFF2A8C2A);
+      case 'abdômen':
+        return const Color(0xFFB89000);
+      case 'glúteos':
+        return const Color(0xFFB83090);
+      default:
+        return c.textHint;
+    }
   }
 }
 

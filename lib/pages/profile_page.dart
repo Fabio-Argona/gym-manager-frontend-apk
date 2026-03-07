@@ -311,9 +311,9 @@ class _ProfilePageState extends State<ProfilePage>
           nomeController,
           icon: Icons.person_outline_rounded,
         ),
-        _buildEditableField(
+        _buildReadOnlyField(
           'Email',
-          emailController,
+          emailController.text,
           icon: Icons.email_outlined,
         ),
         _buildEditableField(
@@ -536,7 +536,7 @@ class _ProfilePageState extends State<ProfilePage>
       onSave: () async {
         final sucesso = await AuthService().salvarMedidas(
           alunoId: aluno?.id ?? '',
-          evolucaoId: _evolucaoId,
+          evolucaoId: null,
           peso: pesoController.text.trim().isEmpty
               ? '0'
               : pesoController.text.trim(),
@@ -659,6 +659,28 @@ class _ProfilePageState extends State<ProfilePage>
         borderSide: BorderSide(color: c.primary, width: 1.8),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    );
+  }
+
+  Widget _buildReadOnlyField(
+    String label,
+    String value, {
+    required IconData icon,
+  }) {
+    final c = AppColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: InputDecorator(
+        decoration: _inputDecoration(label, icon).copyWith(
+          suffixIcon: Icon(
+            Icons.lock_outline_rounded,
+            size: 16,
+            color: c.textHint,
+          ),
+          fillColor: c.inputBg.withOpacity(0.5),
+        ),
+        child: Text(value, style: TextStyle(color: c.textHint, fontSize: 15)),
+      ),
     );
   }
 
