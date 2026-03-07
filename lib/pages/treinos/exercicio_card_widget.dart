@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'treinos_design_tokens.dart';
 import 'treinos_shared_widgets.dart';
 
@@ -35,6 +35,7 @@ class ExercicioCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final grupoMuscular =
         exercicio['grupoMuscular'] ?? exercicio['grupo_muscular'];
     final index = exerciciosDoGrupo.indexOf(exercicio);
@@ -45,13 +46,13 @@ class ExercicioCard extends StatelessWidget {
           opacity: concluidoHoje ? 0.45 : 1.0,
           child: Container(
             decoration: BoxDecoration(
-              color: cardColorByMuscleGroup(grupoMuscular),
+              color: cardColorByMuscleGroup(grupoMuscular, c),
               border: Border.all(
                 color: concluidoHoje
-                    ? kSuccess.withValues(alpha: 0.4)
+                    ? c.success.withValues(alpha: 0.4)
                     : emExecucao
-                    ? kAccent.withValues(alpha: 0.4)
-                    : kBorder.withValues(alpha: 0.6),
+                    ? c.accent.withValues(alpha: 0.4)
+                    : c.border.withValues(alpha: 0.6),
                 width: 1,
               ),
               borderRadius: BorderRadius.circular(14),
@@ -62,12 +63,12 @@ class ExercicioCard extends StatelessWidget {
               children: [
                 _buildTopRow(context, index),
                 const SizedBox(height: 6),
-                _buildBottomRow(grupoMuscular),
+                _buildBottomRow(context, grupoMuscular),
                 if ((exercicio['observacao'] ?? '').isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
                     '\u2139\uFE0F ${exercicio['observacao']}',
-                    style: const TextStyle(color: kTextHint, fontSize: 12),
+                    style: TextStyle(color: c.textHint, fontSize: 12),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -76,12 +77,13 @@ class ExercicioCard extends StatelessWidget {
             ),
           ),
         ),
-        if (concluidoHoje) _buildConcluidoOverlay(),
+        if (concluidoHoje) _buildConcluidoOverlay(context),
       ],
     );
   }
 
   Widget _buildTopRow(BuildContext context, int index) {
+    final c = AppColors.of(context);
     return Row(
       children: [
         _ReorderButtons(
@@ -95,7 +97,7 @@ class ExercicioCard extends StatelessWidget {
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 15,
-              color: emExecucao ? kAccent : Colors.white,
+              color: emExecucao ? c.accent : c.textSub,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -111,7 +113,8 @@ class ExercicioCard extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomRow(String? grupoMuscular) {
+  Widget _buildBottomRow(BuildContext context, String? grupoMuscular) {
+    final c = AppColors.of(context);
     final tempo = tempoSegundos;
     final tempoLabel = tempo != null
         ? '${(tempo ~/ 60).toString().padLeft(2, '0')}:${(tempo % 60).toString().padLeft(2, '0')}'
@@ -121,25 +124,25 @@ class ExercicioCard extends StatelessWidget {
       children: [
         _InfoBadge(
           label: '${exercicio['series']}x${exercicio['repeticoes']}',
-          color: kAccent,
-          background: kPrimary.withValues(alpha: 0.15),
+          color: c.accent,
+          background: c.primary.withValues(alpha: 0.15),
         ),
         const SizedBox(width: 8),
         Text(
           '${(exercicio['pesoInicial'] ?? 0.0).toStringAsFixed(1)} kg',
-          style: const TextStyle(color: kTextSub, fontSize: 12),
+          style: TextStyle(color: c.textSub, fontSize: 12),
         ),
         if (grupoMuscular != null) ...[
           const SizedBox(width: 8),
           _MuscleGroupTag(grupo: grupoMuscular),
         ],
         const Spacer(),
-        const Icon(Icons.timer_outlined, size: 13, color: kPrimary),
+        Icon(Icons.timer_outlined, size: 13, color: c.primary),
         const SizedBox(width: 4),
         Text(
           tempoLabel,
           style: TextStyle(
-            color: emExecucao ? kAccent : kTextHint,
+            color: emExecucao ? c.accent : c.textHint,
             fontSize: 12,
             fontWeight: emExecucao ? FontWeight.w600 : FontWeight.normal,
           ),
@@ -148,7 +151,8 @@ class ExercicioCard extends StatelessWidget {
     );
   }
 
-  Widget _buildConcluidoOverlay() {
+  Widget _buildConcluidoOverlay(BuildContext context) {
+    final c = AppColors.of(context);
     return Positioned.fill(
       child: Container(
         decoration: BoxDecoration(
@@ -159,7 +163,7 @@ class ExercicioCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
-              color: kSuccess.withValues(alpha: 0.9),
+              color: c.success.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Row(
@@ -203,6 +207,7 @@ class _ReorderButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -215,7 +220,7 @@ class _ReorderButtons extends StatelessWidget {
             icon: Icon(
               Icons.keyboard_arrow_up_rounded,
               size: 18,
-              color: index > 0 ? kTextHint : kTextHint.withValues(alpha: 0.2),
+              color: index > 0 ? c.textHint : c.textHint.withValues(alpha: 0.2),
             ),
             onPressed: index > 0 ? () => onReordenar(index, index - 1) : null,
           ),
@@ -230,8 +235,8 @@ class _ReorderButtons extends StatelessWidget {
               Icons.keyboard_arrow_down_rounded,
               size: 18,
               color: index < total - 1
-                  ? kTextHint
-                  : kTextHint.withValues(alpha: 0.2),
+                  ? c.textHint
+                  : c.textHint.withValues(alpha: 0.2),
             ),
             onPressed: index < total - 1
                 ? () => onReordenar(index, index + 1)
@@ -258,10 +263,11 @@ class _PlayStopButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     if (emExecucao) {
       return iconBtn(
         icon: Icons.stop_circle_rounded,
-        color: kError,
+        color: c.error,
         size: 20,
         tooltip: 'Encerrar',
         onPressed: onEncerrar,
@@ -272,7 +278,7 @@ class _PlayStopButton extends StatelessWidget {
         message: 'Concluído hoje',
         child: iconBtn(
           icon: Icons.play_circle_outline_rounded,
-          color: kTextHint,
+          color: c.textHint,
           size: 20,
           onPressed: null,
         ),
@@ -280,7 +286,7 @@ class _PlayStopButton extends StatelessWidget {
     }
     return iconBtn(
       icon: Icons.play_circle_fill_rounded,
-      color: kAccent,
+      color: c.accent,
       size: 20,
       tooltip: 'Iniciar',
       onPressed: onIniciar,
@@ -296,19 +302,20 @@ class _ExercicioMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert, color: kTextHint, size: 20),
-      color: kCard,
+      icon: Icon(Icons.more_vert, color: c.textHint, size: 20),
+      color: c.card,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: kBorder.withValues(alpha: 0.7)),
+        side: BorderSide(color: c.border.withValues(alpha: 0.7)),
       ),
       itemBuilder: (context) => [
         PopupMenuItem(
           value: 'editar',
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.build_outlined, color: kPrimary, size: 18),
+              Icon(Icons.build_outlined, color: c.primary, size: 18),
               SizedBox(width: 10),
               Text('Editar', style: TextStyle(color: Colors.white)),
             ],
@@ -316,11 +323,11 @@ class _ExercicioMenu extends StatelessWidget {
         ),
         PopupMenuItem(
           value: 'excluir',
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.close_rounded, color: kError, size: 18),
+              Icon(Icons.close_rounded, color: c.error, size: 18),
               SizedBox(width: 10),
-              Text('Excluir', style: TextStyle(color: kError)),
+              Text('Excluir', style: TextStyle(color: c.error)),
             ],
           ),
         ),
@@ -371,7 +378,8 @@ class _MuscleGroupTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cor = tagColorByMuscleGroup(grupo);
+    final c = AppColors.of(context);
+    final cor = tagColorByMuscleGroup(grupo, c);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(

@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_treinoabc/dto/AlunoDTO.dart';
 import 'package:flutter_application_treinoabc/services/auth_service.dart';
@@ -6,21 +6,7 @@ import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../constants/constants.dart';
-
-// ─── Design tokens ────────────────────────────────────────────────────────────
-const _bg1 = Color(0xFF0D0D1A);
-const _bg2 = Color(0xFF1A1040);
-const _card = Color(0xFF1C1B2E);
-const _primary = Color(0xFF7C3AED);
-const _primaryDark = Color(0xFF5B21B6);
-const _accent = Color(0xFF06B6D4);
-const _success = Color(0xFF10B981);
-const _error = Color(0xFFEF4444);
-const _warning = Color(0xFFF59E0B);
-const _inputBg = Color(0xFF252438);
-const _border = Color(0xFF3A3857);
-const _textHint = Color(0xFF8884A8);
-const _textSub = Color(0xFFB0ADCC);
+import '../constants/app_theme.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -196,37 +182,38 @@ class _ProfilePageState extends State<ProfilePage>
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     if (carregando) {
       return Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [_bg1, _bg2],
+            colors: [c.bg1, c.bg2],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
-        child: const Scaffold(
+        child: Scaffold(
           backgroundColor: Colors.transparent,
-          body: Center(child: CircularProgressIndicator(color: _primary)),
+          body: Center(child: CircularProgressIndicator(color: c.primary)),
         ),
       );
     }
 
     if (aluno == null) {
       return Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [_bg1, _bg2],
+            colors: [c.bg1, c.bg2],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
-        child: const Scaffold(
+        child: Scaffold(
           backgroundColor: Colors.transparent,
           body: Center(
             child: Text(
               'Aluno não encontrado',
-              style: TextStyle(color: _textSub),
+              style: TextStyle(color: c.textSub),
             ),
           ),
         ),
@@ -234,9 +221,9 @@ class _ProfilePageState extends State<ProfilePage>
     }
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [_bg1, _bg2],
+          colors: [c.bg1, c.bg2],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -249,7 +236,7 @@ class _ProfilePageState extends State<ProfilePage>
           flexibleSpace: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [_bg2, _bg1.withOpacity(0.85)],
+                colors: [c.bg2, c.bg1.withOpacity(0.85)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -275,20 +262,20 @@ class _ProfilePageState extends State<ProfilePage>
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(48),
             child: Container(
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: _border, width: 1)),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: c.border, width: 1)),
               ),
               child: TabBar(
                 controller: _tabController,
-                indicatorColor: _accent,
+                indicatorColor: c.accent,
                 indicatorWeight: 2.5,
-                labelColor: _accent,
-                unselectedLabelColor: _textHint,
-                labelStyle: const TextStyle(
+                labelColor: c.accent,
+                unselectedLabelColor: c.textHint,
+                labelStyle: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
                 ),
-                unselectedLabelStyle: const TextStyle(
+                unselectedLabelStyle: TextStyle(
                   fontWeight: FontWeight.w400,
                   fontSize: 13,
                 ),
@@ -316,6 +303,7 @@ class _ProfilePageState extends State<ProfilePage>
   // ===== FORMULÁRIOS =====
 
   Widget _buildPessoaisForm() {
+    final c = AppColors.of(context);
     return _buildForm(
       [
         _buildEditableField(
@@ -344,20 +332,20 @@ class _ProfilePageState extends State<ProfilePage>
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: DropdownButtonFormField<String>(
             value: sexoSelecionado.isEmpty ? 'Masculino' : sexoSelecionado,
-            items: const [
+            items: [
               DropdownMenuItem(
                 value: 'Masculino',
-                child: Text('Masculino', style: TextStyle(color: Colors.white)),
+                child: Text('Masculino', style: TextStyle(color: c.textSub)),
               ),
               DropdownMenuItem(
                 value: 'Feminino',
-                child: Text('Feminino', style: TextStyle(color: Colors.white)),
+                child: Text('Feminino', style: TextStyle(color: c.textSub)),
               ),
             ],
             onChanged: (v) =>
                 setState(() => sexoSelecionado = v ?? 'Masculino'),
-            dropdownColor: _inputBg,
-            style: const TextStyle(color: Colors.white),
+            dropdownColor: c.inputBg,
+            style: TextStyle(color: c.textSub),
             decoration: _inputDecoration('Sexo', Icons.wc_rounded),
           ),
         ),
@@ -389,6 +377,7 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   Widget _buildAvaliacaoForm() {
+    final c = AppColors.of(context);
     return _buildForm(
       [
         _buildEditableField(
@@ -417,6 +406,7 @@ class _ProfilePageState extends State<ProfilePage>
         ),
         Builder(
           builder: (context) {
+            final c = AppColors.of(context);
             final peso =
                 double.tryParse(pesoController.text.replaceAll(',', '.')) ?? 0;
             double alt =
@@ -426,26 +416,30 @@ class _ProfilePageState extends State<ProfilePage>
             final imcValor = (peso > 0 && alt > 0) ? peso / (alt * alt) : 0.0;
             final imcTexto = imcValor > 0 ? imcValor.toStringAsFixed(2) : '-';
             String classificacao = '';
-            Color imcCor = _textHint;
+            Color imcCor = c.textHint;
             if (imcValor > 0) {
               if (imcValor < 18.5) {
                 classificacao = 'Abaixo do peso';
-                imcCor = _accent;
+                imcCor = c.accent;
               } else if (imcValor < 25) {
+                final c = AppColors.of(context);
                 classificacao = 'Normal';
-                imcCor = _success;
+                imcCor = c.success;
               } else if (imcValor < 30) {
+                final c = AppColors.of(context);
                 classificacao = 'Sobrepeso';
-                imcCor = _warning;
+                imcCor = c.warning;
               } else if (imcValor < 35) {
+                final c = AppColors.of(context);
                 classificacao = 'Obesidade grau I';
-                imcCor = _error;
+                imcCor = c.error;
               } else if (imcValor < 40) {
+                final c = AppColors.of(context);
                 classificacao = 'Obesidade grau II';
-                imcCor = _error;
+                imcCor = c.error;
               } else {
                 classificacao = 'Obesidade mórbida';
-                imcCor = _error;
+                imcCor = c.error;
               }
             }
             return Padding(
@@ -489,7 +483,7 @@ class _ProfilePageState extends State<ProfilePage>
             );
           },
         ),
-        Divider(color: _border.withOpacity(0.6), height: 32, thickness: 0.8),
+        Divider(color: c.border.withOpacity(0.6), height: 32, thickness: 0.8),
         _buildEditableField(
           'Cintura (cm)',
           cinturaController,
@@ -598,15 +592,16 @@ class _ProfilePageState extends State<ProfilePage>
   // ===== COMPONENTES REUTILIZÁVEIS =====
 
   Widget _buildForm(List<Widget> fields, {required VoidCallback onSave}) {
+    final c = AppColors.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: Column(
         children: [
           Container(
             decoration: BoxDecoration(
-              color: _card,
+              color: c.card,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: _border.withOpacity(0.7), width: 1),
+              border: Border.all(color: c.border.withOpacity(0.7), width: 1),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.25),
@@ -626,16 +621,13 @@ class _ProfilePageState extends State<ProfilePage>
               label: const Text('Salvar alterações'),
               onPressed: onSave,
               style: OutlinedButton.styleFrom(
-                foregroundColor: _accent,
-                side: const BorderSide(color: _border, width: 1.2),
+                foregroundColor: c.accent,
+                side: BorderSide(color: c.border, width: 1.2),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                textStyle: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
+                textStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
               ),
             ),
           ),
@@ -646,23 +638,25 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   InputDecoration _inputDecoration(String label, IconData icon) {
+    final c = AppColors.of(context);
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: _textHint, fontSize: 13),
-      prefixIcon: Icon(icon, color: _textHint, size: 20),
+      labelStyle: TextStyle(color: c.textHint, fontSize: 13),
+      floatingLabelStyle: TextStyle(color: c.textSub, fontSize: 13),
+      prefixIcon: Icon(icon, color: c.textHint, size: 20),
       filled: true,
-      fillColor: _inputBg,
+      fillColor: c.inputBg,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: _border, width: 1.2),
+        borderSide: BorderSide(color: c.border, width: 1.2),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: _border, width: 1.2),
+        borderSide: BorderSide(color: c.border, width: 1.2),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: _primary, width: 1.8),
+        borderSide: BorderSide(color: c.primary, width: 1.8),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );
@@ -675,12 +669,13 @@ class _ProfilePageState extends State<ProfilePage>
     bool number = false,
     MaskTextInputFormatter? mask,
   }) {
+    final c = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: TextFormField(
         controller: controller,
-        style: const TextStyle(color: Colors.white, fontSize: 15),
-        cursorColor: _primary,
+        style: TextStyle(color: c.textSub, fontSize: 15),
+        cursorColor: c.primary,
         keyboardType: number
             ? const TextInputType.numberWithOptions(decimal: true)
             : TextInputType.text,
@@ -691,7 +686,8 @@ class _ProfilePageState extends State<ProfilePage>
   }
 
   void _showResult(bool sucesso) {
-    final color = sucesso ? _success : _error;
+    final c = AppColors.of(context);
+    final color = sucesso ? c.success : c.error;
     final icon = sucesso
         ? Icons.check_circle_outline_rounded
         : Icons.error_outline_rounded;

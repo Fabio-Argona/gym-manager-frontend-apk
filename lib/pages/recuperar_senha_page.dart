@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../constants/app_theme.dart';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 const _bg1 = Color(0xFF0D0D1A);
@@ -70,19 +71,18 @@ class _RecuperarSenhaPageState extends State<RecuperarSenhaPage> {
         content: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
-            border: Border.all(color: color.withOpacity(0.5)),
+            color: color,
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
             children: [
-              Icon(icon, color: color, size: 22),
+              Icon(icon, color: Colors.white, size: 22),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   message,
-                  style: TextStyle(
-                    color: color,
+                  style: const TextStyle(
+                    color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -130,24 +130,24 @@ class _RecuperarSenhaPageState extends State<RecuperarSenhaPage> {
       inputFormatters: inputFormatters,
       maxLength: maxLength,
       onChanged: (_) => setState(() {}),
-      style: const TextStyle(color: Colors.white, fontSize: 15),
+      style: TextStyle(color: Colors.white, fontSize: 15),
       decoration: InputDecoration(
         labelText: label,
         helperText: helperText,
-        helperStyle: const TextStyle(color: _textHint, fontSize: 12),
-        counterStyle: const TextStyle(color: _textHint, fontSize: 11),
+        helperStyle: TextStyle(color: _textHint, fontSize: 12),
+        counterStyle: TextStyle(color: _textHint, fontSize: 11),
         prefixIcon: Icon(icon, color: _primary, size: 20),
         suffixIcon: suffix,
         filled: true,
         fillColor: _inputBg,
-        labelStyle: const TextStyle(color: _textHint, fontSize: 14),
+        labelStyle: TextStyle(color: _textHint, fontSize: 14),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _border),
+          borderSide: BorderSide(color: _border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _primary, width: 1.5),
+          borderSide: BorderSide(color: _primary, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(
           vertical: 16,
@@ -200,10 +200,7 @@ class _RecuperarSenhaPageState extends State<RecuperarSenhaPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
-              textStyle: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
+              textStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
             ),
             onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
             child: const Text('Ir para Login'),
@@ -305,7 +302,7 @@ class _RecuperarSenhaPageState extends State<RecuperarSenhaPage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  textStyle: const TextStyle(
+                  textStyle: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
@@ -328,7 +325,7 @@ class _RecuperarSenhaPageState extends State<RecuperarSenhaPage> {
       child: Scaffold(
         backgroundColor: _bg1,
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,

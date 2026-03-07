@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'treinos_design_tokens.dart';
 
 /// Botão de ícone compacto com tooltip opcional.
@@ -24,14 +24,19 @@ Widget iconBtn({
 }
 
 /// Botão primário com gradiente.
-Widget primaryButton({required String label, required VoidCallback onPressed}) {
+Widget primaryButton(
+  BuildContext context, {
+  required String label,
+  required VoidCallback onPressed,
+}) {
+  final c = AppColors.of(context);
   return DecoratedBox(
     decoration: BoxDecoration(
-      gradient: const LinearGradient(colors: [kPrimary, kPrimaryDark]),
+      gradient: LinearGradient(colors: [c.primary, c.primaryDark]),
       borderRadius: BorderRadius.circular(12),
       boxShadow: [
         BoxShadow(
-          color: kPrimary.withValues(alpha: 0.35),
+          color: c.primary.withValues(alpha: 0.35),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),
@@ -44,7 +49,7 @@ Widget primaryButton({required String label, required VoidCallback onPressed}) {
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        textStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
       ),
       onPressed: onPressed,
       child: Text(label),
@@ -53,7 +58,8 @@ Widget primaryButton({required String label, required VoidCallback onPressed}) {
 }
 
 /// Campo de texto padronizado.
-Widget buildField({
+Widget buildField(
+  BuildContext context, {
   required TextEditingController controller,
   required String label,
   required IconData icon,
@@ -62,28 +68,29 @@ Widget buildField({
   bool autofocus = false,
   TextCapitalization capitalization = TextCapitalization.none,
 }) {
+  final c = AppColors.of(context);
   return TextField(
     controller: controller,
     autofocus: autofocus,
     keyboardType: keyboardType,
     maxLines: maxLines,
     textCapitalization: capitalization,
-    style: const TextStyle(color: Colors.white, fontSize: 15),
-    cursorColor: kPrimary,
+    style: TextStyle(color: Colors.white, fontSize: 15),
+    cursorColor: c.primary,
     decoration: InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: kTextHint, fontSize: 14),
-      prefixIcon: Icon(icon, color: kTextHint, size: 20),
+      labelStyle: TextStyle(color: c.textHint, fontSize: 14),
+      prefixIcon: Icon(icon, color: c.textHint, size: 20),
       filled: true,
-      fillColor: kInputBg,
+      fillColor: c.inputBg,
       contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: kBorder, width: 1.2),
+        borderSide: BorderSide(color: c.border, width: 1.2),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: kPrimary, width: 1.8),
+        borderSide: BorderSide(color: c.primary, width: 1.8),
       ),
     ),
   );
@@ -97,12 +104,13 @@ void showCustomSnackBar(
   bool success = false,
   bool warning = false,
 }) {
+  final c = AppColors.of(context);
   final isSuccess =
       success ||
       (backgroundColor == Colors.greenAccent ||
           backgroundColor == Colors.green);
   final isWarning = warning;
-  final color = isSuccess ? kSuccess : (isWarning ? kWarning : kError);
+  final color = isSuccess ? c.success : (isWarning ? c.warning : c.error);
   final icon = isSuccess
       ? Icons.check_circle_outline_rounded
       : (isWarning ? Icons.warning_amber_rounded : Icons.error_outline_rounded);
@@ -118,19 +126,18 @@ void showCustomSnackBar(
       content: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.15),
-          border: Border.all(color: color.withValues(alpha: 0.5)),
+          color: color,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 22),
+            Icon(icon, color: Colors.white, size: 22),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 mensagem,
-                style: TextStyle(
-                  color: color,
+                style: const TextStyle(
+                  color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),

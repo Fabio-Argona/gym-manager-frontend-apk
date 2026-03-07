@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -631,14 +631,15 @@ class _TreinosPageState extends State<TreinosPage> {
   }
 
   Widget _buildBody() {
+    final c = AppColors.of(context);
     if (_carregando) {
-      return const Center(child: CircularProgressIndicator(color: kPrimary));
+      return Center(child: CircularProgressIndicator(color: c.primary));
     }
     if (_grupos.isEmpty) return const _EmptyState();
     return RefreshIndicator(
       onRefresh: _carregarGrupos,
-      color: kPrimary,
-      backgroundColor: kCard,
+      color: c.primary,
+      backgroundColor: c.card,
       child: ListView.builder(
         padding: const EdgeInsets.only(bottom: 24, top: 4),
         itemCount: _grupos.length,
@@ -688,6 +689,7 @@ class _TreinosHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Row(
@@ -698,18 +700,18 @@ class _TreinosHeader extends StatelessWidget {
               children: [
                 Text(
                   diaSemana,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: kTextHint,
+                    color: c.textHint,
                     fontWeight: FontWeight.w400,
                   ),
                 ),
-                const Text(
+                Text(
                   'Meus Treinos',
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: c.textSub,
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -728,17 +730,14 @@ class _TreinosHeader extends StatelessWidget {
             ),
             onPressed: onNovaTreino,
             style: OutlinedButton.styleFrom(
-              foregroundColor: kAccent,
-              side: const BorderSide(color: kBorder, width: 1.2),
+              foregroundColor: c.accent,
+              side: BorderSide(color: c.border, width: 1.2),
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
               minimumSize: const Size(36, 36),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              textStyle: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
+              textStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
             ),
           ),
         ],
@@ -752,6 +751,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -759,28 +759,28 @@ class _EmptyState extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: kPrimary.withValues(alpha: 0.1),
+              color: c.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.fitness_center_rounded,
-              color: kPrimary,
+              color: c.primary,
               size: 48,
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Nenhum grupo ainda',
             style: TextStyle(
-              color: Colors.white,
+              color: c.textSub,
               fontSize: 18,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Toque em "Novo Treino" para começar',
-            style: TextStyle(color: kTextHint, fontSize: 14),
+            style: TextStyle(color: c.textHint, fontSize: 14),
           ),
         ],
       ),

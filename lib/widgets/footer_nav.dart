@@ -1,12 +1,5 @@
-import 'package:flutter/material.dart';
-
-// ─── Design tokens ────────────────────────────────────────────────────────────
-const _bg2 = Color(0xFF1A1040);
-const _card = Color(0xFF1C1B2E);
-const _primary = Color(0xFF7C3AED);
-const _error = Color(0xFFEF4444);
-const _border = Color(0xFF3A3857);
-const _textHint = Color(0xFF8884A8);
+﻿import 'package:flutter/material.dart';
+import '../constants/app_theme.dart';
 
 class FooterNav extends StatelessWidget {
   final int selectedIndex;
@@ -23,16 +16,17 @@ class FooterNav extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+    Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [_bg2, _card],
+          colors: [c.bg2, c.card],
         ),
         border: Border(
-          top: BorderSide(color: _border.withOpacity(0.8), width: 1),
+          top: BorderSide(color: c.border.withOpacity(0.8), width: 1),
         ),
       ),
       child: SafeArea(
@@ -53,12 +47,12 @@ class FooterNav extends StatelessWidget {
                 selected: selectedIndex == 1,
                 onTap: () => onItemTapped(1),
               ),
-              Container(width: 1, height: 36, color: _border),
+              Container(width: 1, height: 36, color: c.border),
               _NavItem(
                 icon: Icons.logout_rounded,
                 label: 'Sair',
                 selected: false,
-                color: _error,
+                color: c.error,
                 onTap: onLogout,
                 dangerStyle: true,
               ),
@@ -88,8 +82,9 @@ class _NavItem extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final activeColor = color ?? (selected ? _primary : _textHint);
+    Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final activeColor = color ?? (selected ? c.primary : c.textHint);
 
     return Expanded(
       child: InkWell(
@@ -104,9 +99,9 @@ class _NavItem extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               decoration: BoxDecoration(
                 color: selected
-                    ? _primary.withOpacity(0.15)
+                    ? c.primary.withOpacity(0.15)
                     : dangerStyle
-                    ? _error.withOpacity(0.08)
+                    ? c.error.withOpacity(0.08)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),

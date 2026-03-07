@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'treinos_design_tokens.dart';
 import 'treinos_shared_widgets.dart';
 
@@ -19,12 +19,13 @@ class ConfirmDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? kError : kPrimary;
+    final c = AppColors.of(context);
+    final color = danger ? c.error : c.primary;
     return Dialog(
-      backgroundColor: kCard,
+      backgroundColor: c.card,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: kBorder, width: 1),
+        side: BorderSide(color: c.border, width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -48,16 +49,16 @@ class ConfirmDialog extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: c.textSub,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               message,
-              style: const TextStyle(color: kTextSub, fontSize: 14),
+              style: TextStyle(color: c.textSub, fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -66,8 +67,8 @@ class ConfirmDialog extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: kTextSub,
-                      side: const BorderSide(color: kBorder),
+                      foregroundColor: c.textSub,
+                      side: BorderSide(color: c.border),
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -87,7 +88,7 @@ class ConfirmDialog extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                      textStyle: TextStyle(fontWeight: FontWeight.w600),
                     ),
                     onPressed: () => Navigator.pop(context, true),
                     child: Text(confirmLabel),
@@ -115,68 +116,73 @@ class GrupoDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Dialog(
-      backgroundColor: kCard,
+      backgroundColor: c.card,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: kBorder, width: 1),
+        side: BorderSide(color: c.border, width: 1),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: kPrimary.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: c.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.fitness_center_rounded,
+                      color: c.primary,
+                      size: 20,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.fitness_center_rounded,
-                    color: kPrimary,
-                    size: 20,
+                  const SizedBox(width: 12),
+                  Text(
+                    nomeInicial.isEmpty ? 'Criar Grupo' : 'Editar Grupo',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: c.textSub,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  nomeInicial.isEmpty ? 'Criar Grupo' : 'Editar Grupo',
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                ],
+              ),
+              const SizedBox(height: 20),
+              buildField(
+                context,
+                controller: controller,
+                label: 'Nome do grupo',
+                icon: Icons.label_outline_rounded,
+                autofocus: true,
+                capitalization: TextCapitalization.sentences,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    style: TextButton.styleFrom(foregroundColor: c.textHint),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancelar'),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            buildField(
-              controller: controller,
-              label: 'Nome do grupo',
-              icon: Icons.label_outline_rounded,
-              autofocus: true,
-              capitalization: TextCapitalization.sentences,
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  style: TextButton.styleFrom(foregroundColor: kTextHint),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar'),
-                ),
-                const SizedBox(width: 8),
-                primaryButton(
-                  label: 'Salvar',
-                  onPressed: () => Navigator.pop(context, controller.text),
-                ),
-              ],
-            ),
-          ],
+                  const SizedBox(width: 8),
+                  primaryButton(
+                    context,
+                    label: 'Salvar',
+                    onPressed: () => Navigator.pop(context, controller.text),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -225,11 +231,12 @@ class _ExercicioFormDialogState extends State<ExercicioFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Dialog(
-      backgroundColor: kCard,
+      backgroundColor: c.card,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: kBorder, width: 1),
+        side: BorderSide(color: c.border, width: 1),
       ),
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: SingleChildScrollView(
@@ -241,6 +248,7 @@ class _ExercicioFormDialogState extends State<ExercicioFormDialog> {
             _DialogHeader(titulo: widget.titulo),
             const SizedBox(height: 20),
             buildField(
+              context,
               controller: widget.nomeController,
               label: 'Nome do exercício',
               icon: Icons.label_outline_rounded,
@@ -260,6 +268,7 @@ class _ExercicioFormDialogState extends State<ExercicioFormDialog> {
               children: [
                 Expanded(
                   child: buildField(
+                    context,
                     controller: widget.seriesController,
                     label: 'Séries',
                     icon: Icons.repeat_rounded,
@@ -269,6 +278,7 @@ class _ExercicioFormDialogState extends State<ExercicioFormDialog> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: buildField(
+                    context,
                     controller: widget.repeticoesController,
                     label: 'Repetições',
                     icon: Icons.format_list_numbered_rounded,
@@ -279,6 +289,7 @@ class _ExercicioFormDialogState extends State<ExercicioFormDialog> {
             ),
             const SizedBox(height: 12),
             buildField(
+              context,
               controller: widget.pesoController,
               label: 'Peso inicial (kg)',
               icon: Icons.monitor_weight_outlined,
@@ -288,6 +299,7 @@ class _ExercicioFormDialogState extends State<ExercicioFormDialog> {
             ),
             const SizedBox(height: 12),
             buildField(
+              context,
               controller: widget.obsController,
               label: 'Observações (opcional)',
               icon: Icons.notes_rounded,
@@ -299,12 +311,13 @@ class _ExercicioFormDialogState extends State<ExercicioFormDialog> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  style: TextButton.styleFrom(foregroundColor: kTextHint),
+                  style: TextButton.styleFrom(foregroundColor: c.textHint),
                   onPressed: () => Navigator.pop(context, null),
                   child: const Text('Cancelar'),
                 ),
                 const SizedBox(width: 8),
                 primaryButton(
+                  context,
                   label: 'Salvar',
                   onPressed: () => Navigator.pop(context, _grupoSelecionado),
                 ),
@@ -336,11 +349,12 @@ class RegistroExercicioDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Dialog(
-      backgroundColor: kCard,
+      backgroundColor: c.card,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: kBorder, width: 1),
+        side: BorderSide(color: c.border, width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -353,23 +367,19 @@ class RegistroExercicioDialog extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: kAccent.withValues(alpha: 0.12),
+                    color: c.accent.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(
-                    Icons.timer_outlined,
-                    color: kAccent,
-                    size: 20,
-                  ),
+                  child: Icon(Icons.timer_outlined, color: c.accent, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     nomeExercicio,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: c.textSub,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -378,6 +388,7 @@ class RegistroExercicioDialog extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             buildField(
+              context,
               controller: seriesController,
               label: 'Séries realizadas',
               icon: Icons.repeat_rounded,
@@ -385,6 +396,7 @@ class RegistroExercicioDialog extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             buildField(
+              context,
               controller: repeticoesController,
               label: 'Repetições realizadas',
               icon: Icons.format_list_numbered_rounded,
@@ -392,6 +404,7 @@ class RegistroExercicioDialog extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             buildField(
+              context,
               controller: pesoController,
               label: 'Peso utilizado (kg)',
               icon: Icons.monitor_weight_outlined,
@@ -401,6 +414,7 @@ class RegistroExercicioDialog extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             buildField(
+              context,
               controller: obsController,
               label: 'Observações (opcional)',
               icon: Icons.notes_rounded,
@@ -411,12 +425,13 @@ class RegistroExercicioDialog extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  style: TextButton.styleFrom(foregroundColor: kTextHint),
+                  style: TextButton.styleFrom(foregroundColor: c.textHint),
                   onPressed: () => Navigator.pop(context, false),
                   child: const Text('Cancelar'),
                 ),
                 const SizedBox(width: 8),
                 primaryButton(
+                  context,
                   label: 'Salvar',
                   onPressed: () => Navigator.pop(context, true),
                 ),
@@ -437,27 +452,28 @@ class _DialogHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: kAccent.withValues(alpha: 0.12),
+            color: c.accent.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.sports_gymnastics_rounded,
-            color: kAccent,
+            color: c.accent,
             size: 20,
           ),
         ),
         const SizedBox(width: 12),
         Text(
           titulo,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w700,
-            color: Colors.white,
+            color: c.textSub,
           ),
         ),
       ],
@@ -478,40 +494,41 @@ class _MuscleGroupDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return DropdownButtonFormField<String>(
       initialValue: gruposMusculares.contains(grupoSelecionado)
           ? grupoSelecionado
           : gruposMusculares.first,
-      dropdownColor: kInputBg,
-      style: const TextStyle(color: Colors.white, fontSize: 15),
+      dropdownColor: c.inputBg,
+      style: TextStyle(color: c.textSub, fontSize: 15),
       decoration: InputDecoration(
         labelText: 'Grupo muscular',
-        labelStyle: const TextStyle(color: kTextHint, fontSize: 14),
-        prefixIcon: const Icon(
+        labelStyle: TextStyle(color: c.textHint, fontSize: 14),
+        prefixIcon: Icon(
           Icons.accessibility_new_rounded,
-          color: kTextHint,
+          color: c.textHint,
           size: 20,
         ),
         filled: true,
-        fillColor: kInputBg,
+        fillColor: c.inputBg,
         contentPadding: const EdgeInsets.symmetric(
           vertical: 14,
           horizontal: 16,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: kBorder, width: 1.2),
+          borderSide: BorderSide(color: c.border, width: 1.2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: kPrimary, width: 1.8),
+          borderSide: BorderSide(color: c.primary, width: 1.8),
         ),
       ),
       items: gruposMusculares
           .map(
             (g) => DropdownMenuItem(
               value: g,
-              child: Text(g, style: const TextStyle(color: Colors.white)),
+              child: Text(g, style: TextStyle(color: c.textSub)),
             ),
           )
           .toList(),

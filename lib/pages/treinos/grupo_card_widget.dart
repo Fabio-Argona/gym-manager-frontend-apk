@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'treinos_design_tokens.dart';
 import 'treinos_shared_widgets.dart';
 import 'exercicio_card_widget.dart';
@@ -43,6 +43,7 @@ class GrupoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final grupoId = grupo['id'];
     final exercicios = (grupo['exercicios'] as List)
         .where((ex) => ex['ativo'] == true)
@@ -54,9 +55,9 @@ class GrupoCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: kCard,
+        color: c.card,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: kBorder.withValues(alpha: 0.7), width: 1),
+        border: Border.all(color: c.border.withValues(alpha: 0.7), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.3),
@@ -80,7 +81,7 @@ class GrupoCard extends StatelessWidget {
           Divider(
             thickness: 0.5,
             height: 1,
-            color: kBorder.withValues(alpha: 0.5),
+            color: c.border.withValues(alpha: 0.5),
           ),
           if (expandido) ...[
             if (exercicios.isEmpty)
@@ -170,6 +171,7 @@ class _GrupoHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
@@ -180,10 +182,10 @@ class _GrupoHeader extends StatelessWidget {
               children: [
                 Text(
                   nome,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 16,
-                    color: Colors.white,
+                    color: c.textSub,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -192,18 +194,14 @@ class _GrupoHeader extends StatelessWidget {
                   children: [
                     Text(
                       '$count exercício${count == 1 ? '' : 's'}',
-                      style: const TextStyle(color: kTextHint, fontSize: 12),
+                      style: TextStyle(color: c.textHint, fontSize: 12),
                     ),
                     const SizedBox(width: 10),
-                    const Icon(
-                      Icons.access_time_rounded,
-                      size: 13,
-                      color: kAccent,
-                    ),
+                    Icon(Icons.access_time_rounded, size: 13, color: c.accent),
                     const SizedBox(width: 4),
                     Text(
                       tempoLabel,
-                      style: const TextStyle(color: kTextHint, fontSize: 12),
+                      style: TextStyle(color: c.textHint, fontSize: 12),
                     ),
                   ],
                 ),
@@ -212,14 +210,14 @@ class _GrupoHeader extends StatelessWidget {
           ),
           iconBtn(
             icon: Icons.build_outlined,
-            color: kPrimary,
+            color: c.primary,
             size: 18,
             tooltip: 'Editar',
             onPressed: onEditar,
           ),
           iconBtn(
             icon: Icons.close_rounded,
-            color: kError,
+            color: c.error,
             size: 18,
             tooltip: 'Excluir',
             onPressed: onExcluir,
@@ -228,7 +226,7 @@ class _GrupoHeader extends StatelessWidget {
             icon: expandido
                 ? Icons.keyboard_arrow_up_rounded
                 : Icons.keyboard_arrow_down_rounded,
-            color: kTextHint,
+            color: c.textHint,
             size: 20,
             tooltip: expandido ? 'Recolher' : 'Expandir',
             onPressed: onToggleExpand,
@@ -244,16 +242,17 @@ class _EmptyExerciciosHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    final c = AppColors.of(context);
+    return Padding(
       padding: EdgeInsets.all(20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.info_outline_rounded, color: kTextHint, size: 16),
+          Icon(Icons.info_outline_rounded, color: c.textHint, size: 16),
           SizedBox(width: 8),
           Text(
             'Nenhum exercício neste grupo.',
-            style: TextStyle(color: kTextHint, fontSize: 13),
+            style: TextStyle(color: c.textHint, fontSize: 13),
           ),
         ],
       ),
@@ -268,6 +267,7 @@ class _AddExercicioButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
       child: SizedBox(
@@ -277,16 +277,13 @@ class _AddExercicioButton extends StatelessWidget {
           label: const Text('Adicionar Exercício'),
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
-            foregroundColor: kAccent,
-            side: const BorderSide(color: kBorder, width: 1.2),
+            foregroundColor: c.accent,
+            side: BorderSide(color: c.border, width: 1.2),
             padding: const EdgeInsets.symmetric(vertical: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            textStyle: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
+            textStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
         ),
       ),

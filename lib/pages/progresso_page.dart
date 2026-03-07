@@ -1,23 +1,10 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/constants.dart';
-
-// ─── Design tokens ────────────────────────────────────────────────────────────
-const _bg1 = Color(0xFF0D0D1A);
-const _bg2 = Color(0xFF1A1040);
-const _card = Color(0xFF1C1B2E);
-const _primary = Color(0xFF7C3AED);
-const _accent = Color(0xFF06B6D4);
-const _success = Color(0xFF10B981);
-const _warning = Color(0xFFF59E0B);
-const _error = Color(0xFFEF4444);
-const _inputBg = Color(0xFF252438);
-const _border = Color(0xFF3A3857);
-const _textHint = Color(0xFF8884A8);
-const _textSub = Color(0xFFB0ADCC);
+import '../constants/app_theme.dart';
 
 class ProgressoPage extends StatefulWidget {
   const ProgressoPage({super.key});
@@ -46,6 +33,9 @@ class _ProgressoPageState extends State<ProgressoPage> {
 
   // Carga máxima
   double _cargaMax = 0;
+
+  // Calendário
+  DateTime _mesCalendario = DateTime(DateTime.now().year, DateTime.now().month);
 
   @override
   void initState() {
@@ -167,11 +157,12 @@ class _ProgressoPageState extends State<ProgressoPage> {
   }
 
   Color _imcCor(double imc) {
-    if (imc <= 0) return _textHint;
-    if (imc < 18.5) return _accent;
-    if (imc < 25) return _success;
-    if (imc < 30) return _warning;
-    return _error;
+    final c = AppColors.of(context);
+    if (imc <= 0) return c.textHint;
+    if (imc < 18.5) return c.accent;
+    if (imc < 25) return c.success;
+    if (imc < 30) return c.warning;
+    return c.error;
   }
 
   int get _totalTreinos => _sessoes.length;
@@ -200,16 +191,17 @@ class _ProgressoPageState extends State<ProgressoPage> {
   }
 
   Color _corNivel() {
+    final c = AppColors.of(context);
     final d = _diasAtivos;
     if (d >= 500) return const Color(0xFFFFD700);
     if (d >= 300) return const Color(0xFFAB47BC);
     if (d >= 200) return const Color(0xFF26C6DA);
     if (d >= 150) return const Color(0xFF42A5F5);
-    if (d >= 100) return _success;
-    if (d >= 60) return _warning;
-    if (d >= 30) return _accent;
-    if (d >= 10) return _primary;
-    return _textHint;
+    if (d >= 100) return c.success;
+    if (d >= 60) return c.warning;
+    if (d >= 30) return c.accent;
+    if (d >= 10) return c.primary;
+    return c.textHint;
   }
 
   IconData _iconNivel() {
@@ -245,6 +237,17 @@ class _ProgressoPageState extends State<ProgressoPage> {
     return datas.length;
   }
 
+  Set<String> get _datasAtivas {
+    return _sessoes
+        .map(
+          (s) => (s['data'] ?? s['dataSessao'] ?? s['data_sessao'] ?? '')
+              .toString(),
+        )
+        .where((d) => d.length >= 10)
+        .map((d) => d.substring(0, 10))
+        .toSet();
+  }
+
   List<Map<String, dynamic>> get _ultimasSessoes =>
       _sessoes.reversed.take(5).toList();
 
@@ -278,22 +281,25 @@ class _ProgressoPageState extends State<ProgressoPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return WillPopScope(
       onWillPop: () async => false,
       child: _loading
-          ? const Center(child: CircularProgressIndicator(color: _primary))
+          ? Center(child: CircularProgressIndicator(color: c.primary))
           : _erro != null
           ? _buildErro()
           : RefreshIndicator(
               onRefresh: _carregar,
-              color: _primary,
-              backgroundColor: _card,
+              color: c.primary,
+              backgroundColor: c.card,
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 children: [
                   _buildHeader(),
                   const SizedBox(height: 10),
                   _buildRecompensasCard(),
+                  const SizedBox(height: 10),
+                  _buildCalendario(),
                   if (_imc() != 0) ...[
                     const SizedBox(height: 10),
                     _buildImcCard(),
@@ -319,21 +325,22 @@ class _ProgressoPageState extends State<ProgressoPage> {
   }
 
   Widget _buildErro() {
+    final c = AppColors.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.wifi_off_rounded, color: _textHint, size: 48),
+          Icon(Icons.wifi_off_rounded, color: c.textHint, size: 48),
           const SizedBox(height: 12),
-          Text(_erro!, style: const TextStyle(color: _textSub)),
+          Text(_erro!, style: TextStyle(color: c.textSub)),
           const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: _carregar,
             icon: const Icon(Icons.refresh_rounded),
             label: const Text('Tentar novamente'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: _accent,
-              side: const BorderSide(color: _border),
+              foregroundColor: c.accent,
+              side: BorderSide(color: c.border),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -347,6 +354,7 @@ class _ProgressoPageState extends State<ProgressoPage> {
   // ─── Header ─────────────────────────────────────────────────────────────────
 
   Widget _buildHeader() {
+    final c = AppColors.of(context);
     final cor = _corNivel();
     final nivel = _nivelAtual();
     final icon = _iconNivel();
@@ -357,10 +365,10 @@ class _ProgressoPageState extends State<ProgressoPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Seu Progresso',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: c.textSub,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.2,
@@ -371,27 +379,27 @@ class _ProgressoPageState extends State<ProgressoPage> {
                 children: [
                   Icon(
                     Icons.fitness_center_rounded,
-                    color: _textHint,
+                    color: c.textHint,
                     size: 12,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     '$_totalTreinos treinos',
-                    style: const TextStyle(color: _textHint, fontSize: 11),
+                    style: TextStyle(color: c.textHint, fontSize: 11),
                   ),
-                  const Text(
+                  Text(
                     '  ·  ',
-                    style: TextStyle(color: _textHint, fontSize: 11),
+                    style: TextStyle(color: c.textHint, fontSize: 11),
                   ),
                   Icon(
                     Icons.calendar_today_rounded,
-                    color: _textHint,
+                    color: c.textHint,
                     size: 11,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     '$_diasAtivos dias ativos',
-                    style: const TextStyle(color: _textHint, fontSize: 11),
+                    style: TextStyle(color: c.textHint, fontSize: 11),
                   ),
                 ],
               ),
@@ -425,9 +433,194 @@ class _ProgressoPageState extends State<ProgressoPage> {
     );
   }
 
+  // ─── Calendário ────────────────────────────────────────────────────────────
+
+  Widget _buildCalendario() {
+    final c = AppColors.of(context);
+    final datas = _datasAtivas;
+    final ano = _mesCalendario.year;
+    final mes = _mesCalendario.month;
+    final primeiroDia = DateTime(ano, mes, 1);
+    final ultimoDia = DateTime(ano, mes + 1, 0);
+    final diasNoMes = ultimoDia.day;
+    final inicioSemana = primeiroDia.weekday % 7; // 0=Dom
+    final hoje = DateTime.now();
+    final labels = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+    final meses = [
+      '',
+      'Janeiro',
+      'Fevereiro',
+      'Março',
+      'Abril',
+      'Maio',
+      'Junho',
+      'Julho',
+      'Agosto',
+      'Setembro',
+      'Outubro',
+      'Novembro',
+      'Dezembro',
+    ];
+
+    return _sectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.calendar_month_rounded, color: c.primary, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                'Calendário de Treinos',
+                style: TextStyle(
+                  color: c.textSub,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Navegação de mês
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                onPressed: () => setState(() {
+                  _mesCalendario = DateTime(ano, mes - 1);
+                }),
+                icon: Icon(Icons.chevron_left_rounded, color: c.textHint),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+              ),
+              Text(
+                '${meses[mes]} $ano',
+                style: TextStyle(
+                  color: c.textSub,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              IconButton(
+                onPressed: () => setState(() {
+                  _mesCalendario = DateTime(ano, mes + 1);
+                }),
+                icon: Icon(Icons.chevron_right_rounded, color: c.textHint),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          // Cabeçalho dias da semana
+          Row(
+            children: labels
+                .map(
+                  (l) => Expanded(
+                    child: Center(
+                      child: Text(
+                        l,
+                        style: TextStyle(
+                          color: c.textHint,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 6),
+          // Grade do mês
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              mainAxisSpacing: 4,
+              crossAxisSpacing: 4,
+              childAspectRatio: 1,
+            ),
+            itemCount: inicioSemana + diasNoMes,
+            itemBuilder: (_, i) {
+              if (i < inicioSemana) return const SizedBox.shrink();
+              final dia = i - inicioSemana + 1;
+              final dataStr =
+                  '$ano-${mes.toString().padLeft(2, '0')}-${dia.toString().padLeft(2, '0')}';
+              final treinou = datas.contains(dataStr);
+              final ehHoje =
+                  dia == hoje.day && mes == hoje.month && ano == hoje.year;
+              return Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: treinou
+                      ? c.primary.withOpacity(0.85)
+                      : ehHoje
+                      ? c.accent.withOpacity(0.15)
+                      : Colors.transparent,
+                  border: ehHoje && !treinou
+                      ? Border.all(color: c.accent.withOpacity(0.6), width: 1.5)
+                      : null,
+                ),
+                child: Center(
+                  child: Text(
+                    '$dia',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: treinou || ehHoje
+                          ? FontWeight.w700
+                          : FontWeight.w400,
+                      color: treinou
+                          ? Colors.white
+                          : ehHoje
+                          ? c.accent
+                          : c.textHint,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          // Legenda
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: c.primary,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Dia treinado',
+                style: TextStyle(color: c.textHint, fontSize: 11),
+              ),
+              const SizedBox(width: 16),
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: c.accent, width: 1.5),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text('Hoje', style: TextStyle(color: c.textHint, fontSize: 11)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   // ─── Recompensas Card ──────────────────────────────────────────────────────
 
   Widget _buildRecompensasCard() {
+    final c = AppColors.of(context);
     final dias = _diasAtivos;
     final cor = _corNivel();
     final proximo = _proximoNivelDias();
@@ -514,16 +707,12 @@ class _ProgressoPageState extends State<ProgressoPage> {
           // Título
           Row(
             children: [
-              const Icon(
-                Icons.military_tech_rounded,
-                color: _warning,
-                size: 18,
-              ),
+              Icon(Icons.military_tech_rounded, color: c.warning, size: 18),
               const SizedBox(width: 6),
-              const Text(
+              Text(
                 'Conquistas',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: c.textSub,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                 ),
@@ -537,8 +726,8 @@ class _ProgressoPageState extends State<ProgressoPage> {
             children: [
               Text(
                 '$dias dias',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: c.textSub,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -548,7 +737,7 @@ class _ProgressoPageState extends State<ProgressoPage> {
                 dias >= 500
                     ? 'Nível máximo!'
                     : '$proximo dias para ${_nomesNivel[_limitesNivel.indexOf(proximo)]}',
-                style: const TextStyle(color: _textHint, fontSize: 11),
+                style: TextStyle(color: c.textHint, fontSize: 11),
               ),
             ],
           ),
@@ -558,24 +747,25 @@ class _ProgressoPageState extends State<ProgressoPage> {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 7,
-              backgroundColor: _border.withOpacity(0.4),
+              backgroundColor: c.border.withOpacity(0.4),
               valueColor: AlwaysStoppedAnimation<Color>(cor),
             ),
           ),
           const SizedBox(height: 16),
 
           // Badges
-          const Text(
+          Text(
             'Marcos desbloqueados',
-            style: TextStyle(color: _textHint, fontSize: 11),
+            style: TextStyle(color: c.textHint, fontSize: 11),
           ),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: marcos.map((m) {
+              final c = AppColors.of(context);
               final unlocked = dias >= m;
-              final badgeCor = unlocked ? cor : _border;
+              final badgeCor = unlocked ? cor : c.border;
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -584,17 +774,17 @@ class _ProgressoPageState extends State<ProgressoPage> {
                     height: 40,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: unlocked ? badgeCor.withOpacity(0.18) : _inputBg,
+                      color: unlocked ? badgeCor.withOpacity(0.18) : c.inputBg,
                       border: Border.all(
                         color: unlocked
                             ? badgeCor.withOpacity(0.7)
-                            : _border.withOpacity(0.4),
+                            : c.border.withOpacity(0.4),
                         width: 1.5,
                       ),
                     ),
                     child: Icon(
                       badgeIcons[m]!,
-                      color: unlocked ? badgeCor : _textHint.withOpacity(0.3),
+                      color: unlocked ? badgeCor : c.textHint.withOpacity(0.3),
                       size: 18,
                     ),
                   ),
@@ -604,7 +794,7 @@ class _ProgressoPageState extends State<ProgressoPage> {
                     style: TextStyle(
                       color: unlocked
                           ? cor.withOpacity(0.85)
-                          : _textHint.withOpacity(0.35),
+                          : c.textHint.withOpacity(0.35),
                       fontSize: 9,
                       fontWeight: FontWeight.w600,
                     ),
@@ -621,6 +811,7 @@ class _ProgressoPageState extends State<ProgressoPage> {
   // ─── IMC Card ───────────────────────────────────────────────────────────────
 
   Widget _buildImcCard() {
+    final c = AppColors.of(context);
     final imc = _imc();
     final cor = _imcCor(imc);
     final classe = _imcClassificacao(imc);
@@ -633,7 +824,7 @@ class _ProgressoPageState extends State<ProgressoPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionTitle('IMC', Icons.calculate_outlined, _accent),
+          _sectionTitle('IMC', Icons.calculate_outlined, c.accent),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -674,22 +865,22 @@ class _ProgressoPageState extends State<ProgressoPage> {
                       borderRadius: BorderRadius.circular(4),
                       child: LinearProgressIndicator(
                         value: norm,
-                        backgroundColor: _inputBg,
+                        backgroundColor: c.inputBg,
                         valueColor: AlwaysStoppedAnimation(cor),
                         minHeight: 6,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Row(
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           '14',
-                          style: TextStyle(color: _textHint, fontSize: 10),
+                          style: TextStyle(color: c.textHint, fontSize: 10),
                         ),
                         Text(
                           '40',
-                          style: TextStyle(color: _textHint, fontSize: 10),
+                          style: TextStyle(color: c.textHint, fontSize: 10),
                         ),
                       ],
                     ),
@@ -706,24 +897,25 @@ class _ProgressoPageState extends State<ProgressoPage> {
   // ─── Evolução Card ──────────────────────────────────────────────────────────
 
   Widget _buildEvolucaoCard() {
+    final c = AppColors.of(context);
     final u = _ultimaEvolucao;
     if (u == null) return const SizedBox.shrink();
 
     final itens = [
-      _EvolItem('Peso', 'kg', 'peso', Icons.monitor_weight_outlined, _accent),
+      _EvolItem('Peso', 'kg', 'peso', Icons.monitor_weight_outlined, c.accent),
       _EvolItem(
         'Gordura',
         '%',
         'percentualGordura',
         Icons.water_drop_outlined,
-        _warning,
+        c.warning,
       ),
       _EvolItem(
         'Músculo',
         '%',
         'percentualMusculo',
         Icons.fitness_center_rounded,
-        _success,
+        c.success,
       ),
     ];
 
@@ -734,7 +926,7 @@ class _ProgressoPageState extends State<ProgressoPage> {
           _sectionTitle(
             'Evolução Corporal',
             Icons.trending_up_rounded,
-            _primary,
+            c.primary,
           ),
           const SizedBox(height: 14),
           ...itens.map((it) {
@@ -758,7 +950,7 @@ class _ProgressoPageState extends State<ProgressoPage> {
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 'Comparado ao início (${_formatarData(_primeiraEvolucao?['data']?.toString())})',
-                style: const TextStyle(color: _textHint, fontSize: 11),
+                style: TextStyle(color: c.textHint, fontSize: 11),
               ),
             ),
         ],
@@ -774,9 +966,10 @@ class _ProgressoPageState extends State<ProgressoPage> {
     double? delta,
     required Color color,
   }) {
+    final c = AppColors.of(context);
     final hasDelta = delta != null && delta != 0;
     final isPositive = (delta ?? 0) > 0;
-    final deltaColor = isPositive ? _error : _success;
+    final deltaColor = isPositive ? c.error : c.success;
     // For gordura, positive delta = bad; for other fields context varies
     return Row(
       children: [
@@ -793,15 +986,12 @@ class _ProgressoPageState extends State<ProgressoPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: const TextStyle(color: _textSub, fontSize: 12),
-              ),
+              Text(label, style: TextStyle(color: c.textSub, fontSize: 12)),
               const SizedBox(height: 2),
               Text(
                 '${value.toStringAsFixed(1)} $unidade',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: c.textSub,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                 ),
@@ -845,28 +1035,30 @@ class _ProgressoPageState extends State<ProgressoPage> {
   // ─── Histórico Card ─────────────────────────────────────────────────────────
 
   Widget _buildHistoricoCard() {
+    final c = AppColors.of(context);
     return _sectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionTitle('Últimos Treinos', Icons.history_rounded, _primary),
+          _sectionTitle('Últimos Treinos', Icons.history_rounded, c.primary),
           const SizedBox(height: 12),
           if (_ultimasSessoes.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
-                children: const [
-                  Icon(Icons.info_outline_rounded, color: _textHint, size: 16),
+                children: [
+                  Icon(Icons.info_outline_rounded, color: c.textHint, size: 16),
                   SizedBox(width: 8),
                   Text(
                     'Nenhum treino registrado ainda.',
-                    style: TextStyle(color: _textHint, fontSize: 13),
+                    style: TextStyle(color: c.textHint, fontSize: 13),
                   ),
                 ],
               ),
             )
           else
             ...List.generate(_ultimasSessoes.length, (i) {
+              final c = AppColors.of(context);
               final s = _ultimasSessoes[i];
               final nome =
                   s['grupoNome'] ?? s['grupo_nome'] ?? s['nome'] ?? 'Treino';
@@ -879,7 +1071,7 @@ class _ProgressoPageState extends State<ProgressoPage> {
                     Divider(
                       height: 1,
                       thickness: 0.5,
-                      color: _border.withOpacity(0.5),
+                      color: c.border.withOpacity(0.5),
                     ),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10),
@@ -889,13 +1081,13 @@ class _ProgressoPageState extends State<ProgressoPage> {
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: _primary.withOpacity(0.12),
+                            color: c.primary.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Icon(
                               Icons.fitness_center_rounded,
-                              color: _primary,
+                              color: c.primary,
                               size: 18,
                             ),
                           ),
@@ -904,8 +1096,8 @@ class _ProgressoPageState extends State<ProgressoPage> {
                         Expanded(
                           child: Text(
                             nome.toString(),
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: c.textSub,
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
                             ),
@@ -918,15 +1110,12 @@ class _ProgressoPageState extends State<ProgressoPage> {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: _inputBg,
+                            color: c.inputBg,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             data,
-                            style: const TextStyle(
-                              color: _textHint,
-                              fontSize: 11,
-                            ),
+                            style: TextStyle(color: c.textHint, fontSize: 11),
                           ),
                         ),
                       ],
@@ -953,6 +1142,7 @@ class _ProgressoPageState extends State<ProgressoPage> {
   ];
 
   Widget _buildGrupoMuscularChart() {
+    final c = AppColors.of(context);
     final grupos = _grupoCount;
     if (grupos.isEmpty) return const SizedBox.shrink();
     final maxVal = grupos.values.first.toDouble();
@@ -962,11 +1152,15 @@ class _ProgressoPageState extends State<ProgressoPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionTitle('Grupos Musculares', Icons.bar_chart_rounded, _primary),
+          _sectionTitle(
+            'Grupos Musculares',
+            Icons.bar_chart_rounded,
+            c.primary,
+          ),
           const SizedBox(height: 6),
           Text(
             'Exercícios por grupo muscular — total: ${_progressao.length}',
-            style: const TextStyle(color: _textHint, fontSize: 11),
+            style: TextStyle(color: c.textHint, fontSize: 11),
           ),
           const SizedBox(height: 18),
           ...List.generate(entries.length, (i) {
@@ -985,8 +1179,8 @@ class _ProgressoPageState extends State<ProgressoPage> {
                       Expanded(
                         child: Text(
                           grupo,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: c.textSub,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1007,13 +1201,14 @@ class _ProgressoPageState extends State<ProgressoPage> {
                   const SizedBox(height: 6),
                   LayoutBuilder(
                     builder: (ctx, constraints) {
+                      final c = AppColors.of(context);
                       return Stack(
                         children: [
                           Container(
                             height: 8,
                             width: constraints.maxWidth,
                             decoration: BoxDecoration(
-                              color: _inputBg,
+                              color: c.inputBg,
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -1045,22 +1240,23 @@ class _ProgressoPageState extends State<ProgressoPage> {
   // ─── Objetivo Card ──────────────────────────────────────────────────────────
 
   Widget _buildObjetivoCard() {
+    final c = AppColors.of(context);
     return _sectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionTitle('Meta & Nível', Icons.flag_outlined, _success),
+          _sectionTitle('Meta & Nível', Icons.flag_outlined, c.success),
           const SizedBox(height: 14),
           if (_objetivo.isNotEmpty)
             _infoRow(
               Icons.emoji_events_outlined,
               'Objetivo',
               _objetivo,
-              _warning,
+              c.warning,
             ),
           if (_nivel.isNotEmpty) ...[
             if (_objetivo.isNotEmpty) const SizedBox(height: 10),
-            _infoRow(Icons.trending_up_rounded, 'Nível', _nivel, _accent),
+            _infoRow(Icons.trending_up_rounded, 'Nível', _nivel, c.accent),
           ],
         ],
       ),
@@ -1068,6 +1264,7 @@ class _ProgressoPageState extends State<ProgressoPage> {
   }
 
   Widget _infoRow(IconData icon, String label, String value, Color color) {
+    final c = AppColors.of(context);
     return Row(
       children: [
         Container(
@@ -1083,15 +1280,12 @@ class _ProgressoPageState extends State<ProgressoPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: const TextStyle(color: _textHint, fontSize: 11),
-              ),
+              Text(label, style: TextStyle(color: c.textHint, fontSize: 11)),
               const SizedBox(height: 2),
               Text(
                 value,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: c.textSub,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1106,11 +1300,12 @@ class _ProgressoPageState extends State<ProgressoPage> {
   // ─── Shared helpers ─────────────────────────────────────────────────────────
 
   Widget _sectionCard({required Widget child}) {
+    final c = AppColors.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: _card,
+        color: c.card,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border.withOpacity(0.7), width: 1),
+        border: Border.all(color: c.border.withOpacity(0.7), width: 1),
       ),
       padding: const EdgeInsets.all(16),
       child: child,
@@ -1118,6 +1313,7 @@ class _ProgressoPageState extends State<ProgressoPage> {
   }
 
   Widget _sectionTitle(String label, IconData icon, Color color) {
+    final c = AppColors.of(context);
     return Row(
       children: [
         Container(
@@ -1131,8 +1327,8 @@ class _ProgressoPageState extends State<ProgressoPage> {
         const SizedBox(width: 10),
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: c.textSub,
             fontSize: 15,
             fontWeight: FontWeight.w700,
           ),

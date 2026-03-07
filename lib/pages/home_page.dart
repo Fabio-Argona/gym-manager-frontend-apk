@@ -1,14 +1,16 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_application_treinoabc/services/treino_service.dart';
 import 'package:flutter_application_treinoabc/widgets/footer_nav.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import '../constants/constants.dart';
-import 'treinos/treinos_design_tokens.dart';
+import '../constants/app_theme.dart';
+import '../providers/theme_provider.dart';
 import 'treinos/treinos_shared_widgets.dart';
 import 'treinos/treinos_dialogs.dart';
 import 'treinos/treinos_page.dart';
@@ -30,6 +32,7 @@ class _HomePageState extends State<HomePage>
   late final List<Widget> _pages;
   String? _imagemUrl;
   int _diasAtivos = 0;
+  Set<String> _datasAtivas = {};
   late AnimationController _ringController;
 
   static const _limitesNivel = [0, 10, 30, 60, 100, 150, 200, 300, 500];
@@ -53,15 +56,16 @@ class _HomePageState extends State<HomePage>
   }
 
   Color get _corNivel {
+    final c = AppColors.of(context);
     if (_diasAtivos >= 500) return const Color(0xFFFFD700);
     if (_diasAtivos >= 300) return const Color(0xFFAB47BC);
     if (_diasAtivos >= 200) return const Color(0xFF26C6DA);
     if (_diasAtivos >= 150) return const Color(0xFF42A5F5);
-    if (_diasAtivos >= 100) return kSuccess;
+    if (_diasAtivos >= 100) return c.success;
     if (_diasAtivos >= 60) return const Color(0xFFF59E0B);
-    if (_diasAtivos >= 30) return kAccent;
-    if (_diasAtivos >= 10) return kPrimary;
-    return kTextHint;
+    if (_diasAtivos >= 30) return c.accent;
+    if (_diasAtivos >= 10) return c.primary;
+    return c.textHint;
   }
 
   IconData get _iconNivel {
@@ -118,7 +122,11 @@ class _HomePageState extends State<HomePage>
             .where((d) => d.length >= 10)
             .map((d) => d.substring(0, 10))
             .toSet();
-        if (mounted) setState(() => _diasAtivos = datas.length);
+        if (mounted)
+          setState(() {
+            _diasAtivos = datas.length;
+            _datasAtivas = datas;
+          });
       }
     } catch (_) {}
   }
@@ -222,8 +230,9 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Scaffold(
-      backgroundColor: kBg1,
+      backgroundColor: c.bg1,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -235,8 +244,8 @@ class _HomePageState extends State<HomePage>
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                kBg2.withValues(alpha: 0.95),
-                kBg1.withValues(alpha: 0.0),
+                c.bg2.withValues(alpha: 0.95),
+                c.bg1.withValues(alpha: 0.0),
               ],
             ),
           ),
@@ -268,20 +277,42 @@ class _HomePageState extends State<HomePage>
             ),
           ],
         ),
+        actions: [
+          Consumer<ThemeProvider>(
+            builder: (_, tp, __) => IconButton(
+              tooltip: tp.isDark ? 'Tema claro' : 'Tema escuro',
+              icon: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: Icon(
+                  tp.isDark
+                      ? Icons.light_mode_rounded
+                      : Icons.dark_mode_rounded,
+                  key: ValueKey(tp.isDark),
+                  color: tp.isDark ? Colors.amber : c.primary,
+                ),
+              ),
+              onPressed: tp.toggle,
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [kBg1, kBg2, Color(0xFF0E1628)],
+            colors: [c.bg1, c.bg2, c.bg3],
             stops: [0.0, 0.55, 1.0],
           ),
         ),
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [Expanded(child: _pages[_selectedIndex])],
+            children: [
+              _WeekStrip(datasAtivas: _datasAtivas),
+              Expanded(child: _pages[_selectedIndex]),
+            ],
           ),
         ),
       ),
@@ -296,6 +327,173 @@ class _HomePageState extends State<HomePage>
 }
 
 // ─── Sub-widgets extraídos ────────────────────────────────────────────────────
+
+// ─── Week Strip ───────────────────────────────────────────────────────────────────
+class _WeekStrip extends StatelessWidget {
+  final Set<String> datasAtivas;
+  const _WeekStrip({required this.datasAtivas});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final hoje = DateTime.now();
+    // Mostra hoje + 7 dias anteriores (8 dias no total)
+    final dias = List.generate(8, (i) => hoje.subtract(Duration(days: 7 - i)));
+    const letras = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+    final totalTreinos = datasAtivas.length;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [c.card.withValues(alpha: 0.9), c.bg2.withValues(alpha: 0.7)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.border.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: c.primary.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Coluna lateral com streak info
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$totalTreinos',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: c.primary,
+                  height: 1,
+                ),
+              ),
+              Text(
+                'treinos',
+                style: TextStyle(
+                  fontSize: 9,
+                  color: c.textHint,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 10),
+          Container(
+            width: 1,
+            height: 36,
+            color: c.border.withValues(alpha: 0.5),
+          ),
+          const SizedBox(width: 10),
+          // Dias da semana
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: dias.map((d) {
+                final dataStr =
+                    '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+                final treinou = datasAtivas.contains(dataStr);
+                final ehHoje =
+                    d.year == hoje.year &&
+                    d.month == hoje.month &&
+                    d.day == hoje.day;
+                final letra = letras[d.weekday % 7];
+
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      letra,
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: ehHoje
+                            ? c.accent
+                            : treinou
+                            ? c.primary.withValues(alpha: 0.8)
+                            : c.textHint.withValues(alpha: 0.5),
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: treinou
+                            ? LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  c.primary,
+                                  c.primary.withValues(alpha: 0.7),
+                                ],
+                              )
+                            : null,
+                        color: !treinou
+                            ? ehHoje
+                                  ? c.accent.withValues(alpha: 0.12)
+                                  : Colors.transparent
+                            : null,
+                        border: ehHoje && !treinou
+                            ? Border.all(color: c.accent, width: 1.5)
+                            : treinou
+                            ? null
+                            : Border.all(
+                                color: c.border.withValues(alpha: 0.3),
+                                width: 1,
+                              ),
+                        boxShadow: treinou
+                            ? [
+                                BoxShadow(
+                                  color: c.primary.withValues(alpha: 0.35),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Center(
+                        child: treinou
+                            ? Icon(
+                                Icons.check_rounded,
+                                size: 14,
+                                color: Colors.white,
+                              )
+                            : Text(
+                                '${d.day}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: ehHoje
+                                      ? FontWeight.w700
+                                      : FontWeight.w400,
+                                  color: ehHoje ? c.accent : c.textHint,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 /// Avatar com anel giratório e menu de contexto.
 class _AvatarMenu extends StatelessWidget {
@@ -319,6 +517,7 @@ class _AvatarMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return PopupMenuButton<String>(
       onSelected: (value) {
         switch (value) {
@@ -333,21 +532,21 @@ class _AvatarMenu extends StatelessWidget {
             break;
         }
       },
-      color: kCard,
+      color: c.card,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: kBorder),
+        side: BorderSide(color: c.border),
       ),
-      itemBuilder: (context) => const [
+      itemBuilder: (context) => [
         PopupMenuItem(
           value: 'editar',
           child: Row(
             children: [
-              Icon(Icons.person_outline_rounded, color: kTextSub, size: 18),
+              Icon(Icons.person_outline_rounded, color: c.textSub, size: 18),
               SizedBox(width: 10),
               Text(
                 'Meu Perfil',
-                style: TextStyle(color: Colors.white, fontSize: 14),
+                style: TextStyle(color: c.textSub, fontSize: 14),
               ),
             ],
           ),
@@ -356,11 +555,11 @@ class _AvatarMenu extends StatelessWidget {
           value: 'imagem',
           child: Row(
             children: [
-              Icon(Icons.photo_camera_outlined, color: kTextSub, size: 18),
+              Icon(Icons.photo_camera_outlined, color: c.textSub, size: 18),
               SizedBox(width: 10),
               Text(
                 'Trocar foto',
-                style: TextStyle(color: Colors.white, fontSize: 14),
+                style: TextStyle(color: c.textSub, fontSize: 14),
               ),
             ],
           ),
@@ -369,9 +568,9 @@ class _AvatarMenu extends StatelessWidget {
           value: 'sair',
           child: Row(
             children: [
-              Icon(Icons.logout_rounded, color: kError, size: 18),
+              Icon(Icons.logout_rounded, color: c.error, size: 18),
               SizedBox(width: 10),
-              Text('Sair', style: TextStyle(color: kError, fontSize: 14)),
+              Text('Sair', style: TextStyle(color: c.error, fontSize: 14)),
             ],
           ),
         ),
@@ -389,13 +588,13 @@ class _AvatarMenu extends StatelessWidget {
                 child: Container(
                   width: 43,
                   height: 43,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: SweepGradient(
                       colors: [
                         Colors.transparent,
-                        kAccent,
-                        kPrimary,
+                        c.accent,
+                        c.primary,
                         Colors.transparent,
                       ],
                       stops: [0.0, 0.2, 0.7, 1.0],
@@ -409,7 +608,7 @@ class _AvatarMenu extends StatelessWidget {
         ),
         child: CircleAvatar(
           radius: 19,
-          backgroundColor: kCard,
+          backgroundColor: c.card,
           backgroundImage: imagemUrl != null ? NetworkImage(imagemUrl!) : null,
           onBackgroundImageError: imagemUrl != null
               ? (_, __) => onImageError()
@@ -417,8 +616,8 @@ class _AvatarMenu extends StatelessWidget {
           child: imagemUrl == null
               ? Text(
                   nome.isNotEmpty ? nome[0].toUpperCase() : '?',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: c.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -450,15 +649,16 @@ class _NomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(
+        Text(
           'Bem-vindo,',
           style: TextStyle(
             fontSize: 11,
-            color: kTextHint,
+            color: c.textHint,
             fontWeight: FontWeight.w400,
             letterSpacing: 0.3,
           ),
@@ -466,17 +666,12 @@ class _NomeHeader extends StatelessWidget {
         AnimatedBuilder(
           animation: ringController,
           builder: (context, child) {
+            final c = AppColors.of(context);
             final v = ringController.value;
             return ShaderMask(
               blendMode: BlendMode.srcIn,
               shaderCallback: (bounds) => LinearGradient(
-                colors: const [
-                  Colors.white,
-                  kAccent,
-                  kPrimary,
-                  kAccent,
-                  Colors.white,
-                ],
+                colors: [c.textSub, c.accent, c.primary, c.accent, c.textSub],
                 stops: const [0.0, 0.3, 0.5, 0.7, 1.0],
                 begin: Alignment(-3.0 + v * 4.0, 0),
                 end: Alignment(-1.0 + v * 4.0, 0),
@@ -486,7 +681,7 @@ class _NomeHeader extends StatelessWidget {
           },
           child: Text(
             nome,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
               color: Colors.white,

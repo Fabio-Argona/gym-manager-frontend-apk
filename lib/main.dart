@@ -4,6 +4,8 @@ import 'services/auth_service.dart';
 import 'pages/page_login.dart';
 import 'pages/home_page.dart';
 import 'pages/recuperar_senha_page.dart';
+import 'constants/app_theme.dart';
+import 'providers/theme_provider.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -16,7 +18,10 @@ Future<void> handleUnauthorized() async {
 void main() {
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => AuthService())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
       child: const MyApp(),
     ),
   );
@@ -25,42 +30,60 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Old School Gym Manager',
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        fontFamily: 'Poppins',
-        textTheme: const TextTheme(
-          headlineLarge: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-          bodyMedium: TextStyle(fontSize: 16),
+  static ThemeData _buildTheme(AppColors colors, Brightness brightness) {
+    return ThemeData(
+      brightness: brightness,
+      fontFamily: 'Poppins',
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: kPrimary,
+        brightness: brightness,
+      ),
+      scaffoldBackgroundColor: colors.bg1,
+      textTheme: TextTheme(
+        headlineLarge: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: colors.textSub,
         ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.deepPurple,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            textStyle: const TextStyle(fontSize: 16),
-          ),
+        bodyMedium: TextStyle(fontSize: 16, color: colors.textSub),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: colors.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          textStyle: const TextStyle(fontSize: 16),
         ),
       ),
-      debugShowCheckedModeBanner: false,
-      navigatorKey: navigatorKey,
-      initialRoute: '/login',
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case '/login':
-            return _criarRotaAnimada(const LoginPage());
-          case '/home':
-            final nome = settings.arguments as String? ?? 'Usuário';
-            return _criarRotaAnimada(HomePage(nome: nome));
-          case '/recuperar':
-            return _criarRotaAnimada(const RecuperarSenhaPage());
-          default:
-            return _criarRotaAnimada(const LoginPage());
-        }
-      },
+      extensions: [colors],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ThemeProvider>(
+      builder: (_, tp, __) => MaterialApp(
+        title: 'APEX Iron Gym',
+        theme: _buildTheme(AppColors.light, Brightness.light),
+        darkTheme: _buildTheme(AppColors.dark, Brightness.dark),
+        themeMode: tp.mode,
+        debugShowCheckedModeBanner: false,
+        navigatorKey: navigatorKey,
+        initialRoute: '/login',
+        onGenerateRoute: (settings) {
+          switch (settings.name) {
+            case '/login':
+              return _criarRotaAnimada(const LoginPage());
+            case '/home':
+              final nome = settings.arguments as String? ?? 'Usuário';
+              return _criarRotaAnimada(HomePage(nome: nome));
+            case '/recuperar':
+              return _criarRotaAnimada(const RecuperarSenhaPage());
+            default:
+              return _criarRotaAnimada(const LoginPage());
+          }
+        },
+      ),
     );
   }
 

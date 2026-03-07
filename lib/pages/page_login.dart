@@ -5,20 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../services/auth_service.dart';
 import 'recuperar_senha_page.dart';
-
-// â”€â”€â”€ Design tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const _bg1 = Color(0xFF0D0D1A);
-const _bg2 = Color(0xFF1A1040);
-const _card = Color(0xFF1C1B2E);
-const _primary = Color(0xFF7C3AED);
-const _primaryDark = Color(0xFF5B21B6);
-const _accent = Color(0xFF06B6D4);
-const _success = Color(0xFF10B981);
-const _error = Color(0xFFEF4444);
-const _inputBg = Color(0xFF252438);
-const _border = Color(0xFF3A3857);
-const _textHint = Color(0xFF8884A8);
-const _textSub = Color(0xFFB0ADCC);
+import '../constants/app_theme.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -94,7 +81,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   // â”€â”€â”€ Snackbar padronizado â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _snack(String message, {bool success = false, bool warning = false}) {
-    final color = success ? _success : (warning ? Colors.orange[700]! : _error);
+    final c = AppColors.of(context);
+    final color = success
+        ? c.success
+        : (warning ? Colors.orange[700]! : c.error);
     final icon = success
         ? Icons.check_circle_outline_rounded
         : (warning ? Icons.warning_amber_rounded : Icons.error_outline_rounded);
@@ -108,19 +98,18 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         content: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
-            border: Border.all(color: color.withOpacity(0.5)),
+            color: color,
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
             children: [
-              Icon(icon, color: color, size: 22),
+              Icon(icon, color: Colors.white, size: 22),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   message,
-                  style: TextStyle(
-                    color: color,
+                  style: const TextStyle(
+                    color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -136,18 +125,19 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   // â”€â”€â”€ Build â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final authService = Provider.of<AuthService>(context, listen: false);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: _bg1,
+        backgroundColor: c.bg1,
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [_bg1, _bg2, Color(0xFF0E1628)],
+              colors: [c.bg1, c.bg2, c.bg3],
               stops: [0.0, 0.55, 1.0],
             ),
           ),
@@ -190,13 +180,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   // â”€â”€â”€ Branding â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildBranding() {
-    const title = 'Old School Gym Manager';
+    const title = 'APEX Iron Gym';
     const n = title.length;
 
     return AnimatedBuilder(
       animation: _titleController,
       builder: (context, _) {
         final letterWidgets = List.generate(n, (i) {
+          final c = AppColors.of(context);
           final start = i / n * 0.70;
           final end = (start + 0.30).clamp(0.0, 1.0);
           final fadeEnd = (start + 0.18).clamp(0.0, 1.0);
@@ -225,10 +216,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               position: slideAnim,
               child: Text(
                 title[i],
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: _primary,
+                  color: c.primary,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -248,6 +239,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             AnimatedBuilder(
               animation: _subtitleController,
               builder: (context, _) {
+                final c = AppColors.of(context);
                 final slideAnim =
                     Tween<Offset>(
                       begin: const Offset(2.0, 0),
@@ -291,13 +283,13 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     position: slideAnim,
                     child: ScaleTransition(
                       scale: scaleAnim,
-                      child: const Text(
-                        'Puxa Ferro - Pump das Antigas',
+                      child: Text(
+                        'Forje seu limite.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w400,
-                          color: _textHint,
+                          color: c.textHint,
                           letterSpacing: 0.4,
                         ),
                       ),
@@ -314,11 +306,12 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   // â”€â”€â”€ Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildCard(AuthService authService) {
+    final c = AppColors.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: _card,
+        color: c.card,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _border.withOpacity(0.6)),
+        border: Border.all(color: c.border.withOpacity(0.6)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.35),
@@ -410,10 +403,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                   context,
                   MaterialPageRoute(builder: (_) => const RecuperarSenhaPage()),
                 ),
-                child: const Text(
+                child: Text(
                   'Esqueci minha senha',
                   style: TextStyle(
-                    color: _accent,
+                    color: c.accent,
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
                   ),
@@ -440,13 +433,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   // â”€â”€â”€ Biometria button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildBiometriaButton(AuthService authService) {
+    final c = AppColors.of(context);
     return OutlinedButton.icon(
       style: OutlinedButton.styleFrom(
-        foregroundColor: _accent,
-        side: const BorderSide(color: _border, width: 1.2),
+        foregroundColor: c.accent,
+        side: BorderSide(color: c.border, width: 1.2),
         padding: const EdgeInsets.symmetric(vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        textStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
       ),
       onPressed: isLoading
           ? null
@@ -487,29 +481,27 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   // â”€â”€â”€ Primary button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildPrimaryButton(AuthService authService) {
+    final c = AppColors.of(context);
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 250),
       child: isLoading
-          ? const SizedBox(
+          ? SizedBox(
               width: 28,
               height: 28,
               child: CircularProgressIndicator(
-                color: _accent,
+                color: c.accent,
                 strokeWidth: 2.5,
               ),
             )
           : OutlinedButton(
               style: OutlinedButton.styleFrom(
-                foregroundColor: _accent,
-                side: const BorderSide(color: _border, width: 1.2),
+                foregroundColor: c.accent,
+                side: BorderSide(color: c.border, width: 1.2),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                textStyle: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
+                textStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               ),
               onPressed: () => _submit(authService),
               child: LayoutBuilder(
@@ -526,22 +518,20 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   // â”€â”€â”€ Toggle login/cadastro â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildToggle() {
+    final c = AppColors.of(context);
     return Wrap(
       alignment: WrapAlignment.center,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text(
           isLogin ? 'Ainda n\u00e3o tem conta?' : 'J\u00e1 tem uma conta?',
-          style: const TextStyle(color: _textHint, fontSize: 14),
+          style: TextStyle(color: c.textHint, fontSize: 14),
         ),
         TextButton(
           style: TextButton.styleFrom(
-            foregroundColor: _accent,
+            foregroundColor: c.accent,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            textStyle: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
+            textStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
           onPressed: () {
             setState(() => isLogin = !isLogin);
@@ -564,41 +554,43 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     String? Function(String?)? validator,
     void Function(String)? onChanged,
   }) {
+    final c = AppColors.of(context);
     return TextFormField(
       controller: controller,
       inputFormatters: inputFormatters,
       keyboardType: keyboardType,
       obscureText: obscureText,
       textCapitalization: textCapitalization,
-      style: const TextStyle(color: Colors.white, fontSize: 15),
-      cursorColor: _primary,
+      style: TextStyle(color: c.textSub, fontSize: 15),
+      cursorColor: c.primary,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: _textHint, fontSize: 14),
-        prefixIcon: Icon(icon, color: _textHint, size: 20),
+        labelStyle: TextStyle(color: c.textHint, fontSize: 14),
+        floatingLabelStyle: TextStyle(color: c.textSub, fontSize: 14),
+        prefixIcon: Icon(icon, color: c.textHint, size: 20),
         filled: true,
-        fillColor: _inputBg,
+        fillColor: c.inputBg,
         contentPadding: const EdgeInsets.symmetric(
           vertical: 16,
           horizontal: 16,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _border, width: 1.2),
+          borderSide: BorderSide(color: c.border, width: 1.2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _primary, width: 1.8),
+          borderSide: BorderSide(color: c.primary, width: 1.8),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _error, width: 1.2),
+          borderSide: BorderSide(color: c.error, width: 1.2),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _error, width: 1.8),
+          borderSide: BorderSide(color: c.error, width: 1.8),
         ),
-        errorStyle: const TextStyle(color: _error, fontSize: 12),
+        errorStyle: TextStyle(color: c.error, fontSize: 12),
       ),
       validator: validator,
       onChanged: onChanged,
@@ -607,19 +599,21 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   // ─── Input de senha com toggle ────────────────────────────────────────────────
   Widget _buildPasswordInput() {
+    final c = AppColors.of(context);
     return TextFormField(
       obscureText: !_showPassword,
-      style: const TextStyle(color: Colors.white, fontSize: 15),
-      cursorColor: _primary,
+      style: TextStyle(color: c.textSub, fontSize: 15),
+      cursorColor: c.primary,
       validator: (v) =>
           v != null && v.length >= 6 ? null : 'Mínimo 6 caracteres',
       onChanged: (v) => password = v.trim(),
       decoration: InputDecoration(
         labelText: 'Senha',
-        labelStyle: const TextStyle(color: _textHint, fontSize: 14),
-        prefixIcon: const Icon(
+        labelStyle: TextStyle(color: c.textHint, fontSize: 14),
+        floatingLabelStyle: TextStyle(color: c.textSub, fontSize: 14),
+        prefixIcon: Icon(
           Icons.lock_outline_rounded,
-          color: _textHint,
+          color: c.textHint,
           size: 20,
         ),
         suffixIcon: IconButton(
@@ -627,34 +621,34 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             _showPassword
                 ? Icons.visibility_outlined
                 : Icons.visibility_off_outlined,
-            color: _textHint,
+            color: c.textHint,
             size: 20,
           ),
           onPressed: () => setState(() => _showPassword = !_showPassword),
         ),
         filled: true,
-        fillColor: _inputBg,
+        fillColor: c.inputBg,
         contentPadding: const EdgeInsets.symmetric(
           vertical: 16,
           horizontal: 16,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _border, width: 1.2),
+          borderSide: BorderSide(color: c.border, width: 1.2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _primary, width: 1.8),
+          borderSide: BorderSide(color: c.primary, width: 1.8),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _error, width: 1.2),
+          borderSide: BorderSide(color: c.error, width: 1.2),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _error, width: 1.8),
+          borderSide: BorderSide(color: c.error, width: 1.8),
         ),
-        errorStyle: const TextStyle(color: _error, fontSize: 12),
+        errorStyle: TextStyle(color: c.error, fontSize: 12),
       ),
     );
   }
@@ -718,13 +712,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   // ─── Créditos ────────────────────────────────────────────────────────────
   Widget _buildCredits() {
-    return const Column(
+    final c = AppColors.of(context);
+    return Column(
       children: [
         SizedBox(height: 8),
         Text(
-          'dev: Fabio Argona · Patricia Martins',
+          'dev. Fabio Argona - Patricia Martins',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 10, color: _textHint, letterSpacing: 0.3),
+          style: TextStyle(fontSize: 10, color: c.textHint, letterSpacing: 0.3),
         ),
         SizedBox(height: 8),
       ],

@@ -16,9 +16,8 @@ class TreinoService {
     final alunoId = prefs.getString('alunoId') ?? '';
 
     if (token.isEmpty || alunoId.isEmpty) {
-      throw Exception(
-        'Credenciais inv\u00e1lidas (token: ${token.isEmpty ? "vazio" : "ok"}, alunoId: ${alunoId.isEmpty ? "vazio" : alunoId})',
-      );
+      await handleUnauthorized();
+      throw Exception('Sessão expirada. Faça login novamente.');
     }
 
     final response = await http.get(
@@ -49,7 +48,8 @@ class TreinoService {
     final alunoId = prefs.getString('alunoId') ?? '';
 
     if (token.isEmpty || alunoId.isEmpty) {
-      throw Exception('Credenciais inválidas');
+      await handleUnauthorized();
+      throw Exception('Sessão expirada. Faça login novamente.');
     }
 
     final response = await http.post(
@@ -119,7 +119,8 @@ class TreinoService {
     final alunoId = prefs.getString('alunoId') ?? '';
 
     if (token.isEmpty || alunoId.isEmpty) {
-      throw Exception('Credenciais inválidas');
+      await handleUnauthorized();
+      throw Exception('Sessão expirada. Faça login novamente.');
     }
 
     final result = await FilePicker.platform.pickFiles(type: FileType.image);

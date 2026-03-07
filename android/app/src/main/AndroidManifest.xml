@@ -7,7 +7,7 @@
 
 
     <application
-        android:label="gym_manager_flutter"
+        android:label="APEX Iron Gym"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

@@ -1,17 +1,31 @@
 import 'package:flutter/material.dart';
+import '../../constants/app_theme.dart';
 
-Widget buildField(String label, TextEditingController controller, {bool isNumber = false}) {
+Widget buildField(
+  String label,
+  TextEditingController controller,
+  BuildContext context, {
+  bool isNumber = false,
+}) {
+  final c = AppColors.of(context);
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 6),
     child: TextField(
       controller: controller,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: c.textSub),
+      cursorColor: c.primary,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.grey),
-        enabledBorder: const UnderlineInputBorder(
-          borderSide: BorderSide(color: Colors.grey),
+        labelStyle: TextStyle(color: c.textHint),
+        floatingLabelStyle: TextStyle(color: c.textSub),
+        filled: true,
+        fillColor: c.inputBg,
+        enabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: c.border),
+        ),
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: c.primary, width: 2),
         ),
       ),
     ),
